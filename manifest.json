@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-mirai-bot",
+	"name": "Mirai Bot",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "An obsidian plugin that launch a mirai bot",
+	"author": "Lumos",
+	"authorUrl": "https://obsidian.md",
+	"isDesktopOnly": false
+}
