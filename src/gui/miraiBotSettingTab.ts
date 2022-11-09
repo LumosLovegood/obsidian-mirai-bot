@@ -11,15 +11,15 @@ export interface MiraiBotSettings {
 		password: string | undefined;
 		token: string | undefined;
 	};
-	bot:
+	botConfig:
 		| {
 				baseUrl: string;
 				verifyKey: string;
 				qq: number | undefined;
-				autoLaunch: boolean;
 		  }
 		| undefined;
-	diary: {
+	autoLaunch: boolean;
+	note: {
 		folder: string;
 		format: string;
 		stayWithPN: boolean;
@@ -35,13 +35,13 @@ export const DEFAULT_SETTINGS: MiraiBotSettings = {
 		password: undefined,
 		token: undefined,
 	},
-	bot: undefined,
-	diary: {
+	botConfig: undefined,
+	note: {
 		folder: '',
-		format: '',
+		format: 'Inbox',
 		stayWithPN: false,
 	},
-
+	autoLaunch: false,
 	loggingOptions: {
 		minLevels: {
 			'': 'info',
@@ -90,7 +90,7 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h3', { text: t('Settings_JournalFormatting') });
 		new Setting(containerEl).setName(t('Settings_JournalFormatting_PeriodicNotes')).addToggle((toggle) =>
-			toggle.setValue(this.settings.diary.stayWithPN).onChange(async (value) => {
+			toggle.setValue(this.settings.note.stayWithPN).onChange(async (value) => {
 				if (value) {
 					// @ts-ignore
 					const PNsetting =
@@ -98,12 +98,12 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 						app.plugins.plugins['periodic-notes'];
 					if (PNsetting) {
 						const { format, folder } = PNsetting.settings.daily;
-						this.settings.diary = {
+						this.settings.note = {
 							format,
 							folder,
 							stayWithPN: true,
 						};
-						console.log('🚀 ~ this.settings.diary', this.settings.diary);
+						console.log('🚀 ~ this.settings.diary', this.settings.note);
 						await this.plugin.saveSettings();
 						this.display();
 					} else {
@@ -111,43 +111,43 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 						this.display();
 					}
 				} else {
-					this.settings.diary.stayWithPN = false;
+					this.settings.note.stayWithPN = false;
 					await this.plugin.saveSettings();
 					this.display();
 				}
 			}),
 		);
 
-		const dateFormat = new Setting(containerEl)
+		new Setting(containerEl)
+			.setName(t('Settings_JournalFormatting_DateFormat'))
+			.setDesc(`${t('Settings_JournalFormatting_DateFormatDescription')}`)
+			.addText((text) =>
+				text.setValue(this.settings.note.folder).onChange(async (value) => {
+					this.settings.note.folder = value;
+					await this.plugin.saveSettings();
+				}),
+			)
+			.setDisabled(this.settings.note.stayWithPN);
+
+		const notePath = new Setting(containerEl)
 			.setName(t('Settings_JournalFormatting_DateFormat'))
 			.setDesc(
 				`${t('Settings_JournalFormatting_DateFormatDescription')}  ${
-					!this.settings.diary.format ? '' : window.moment().format(this.settings.diary.format)
+					!this.settings.note.format ? '' : window.moment().format(this.settings.note.format)
 				}`,
 			)
 			.addText((text) =>
-				text.setValue(this.settings.diary.format).onChange(async (value) => {
-					this.settings.diary.format = value;
-					dateFormat.setDesc(
+				text.setValue(this.settings.note.format).onChange(async (value) => {
+					this.settings.note.format = value;
+					notePath.setDesc(
 						`${t('Settings_JournalFormatting_DateFormatDescription')}  ${
-							!this.settings.diary.format ? '' : window.moment().format(this.settings.diary.format)
+							!this.settings.note.format ? '' : window.moment().format(this.settings.note.format)
 						}`,
 					);
 					await this.plugin.saveSettings();
 				}),
 			)
-			.setDisabled(this.settings.diary.stayWithPN);
-
-		new Setting(containerEl)
-			.setName(t('Settings_JournalFormatting_Folder'))
-			.setDesc(t('Settings_JournalFormatting_FolderDescription'))
-			.addText((text) =>
-				text.setValue(this.settings.diary.folder).onChange(async (value) => {
-					this.settings.diary.format = value;
-					await this.plugin.saveSettings();
-				}),
-			)
-			.setDisabled(this.settings.diary.stayWithPN);
+			.setDisabled(this.settings.note.stayWithPN);
 	}
 
 	async hide() {

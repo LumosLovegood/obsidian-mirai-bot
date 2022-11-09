@@ -9,6 +9,7 @@ export const uploadUrlImage = async (imageUrl: string | undefined) => {
 		body: JSON.stringify({ list: [imageUrl] }),
 	});
 	const data = res.json;
+	console.log(data);
 	if (res.status !== 200) {
 		return;
 	} else {

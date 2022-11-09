@@ -60,7 +60,7 @@ export default class MiraiBot extends Plugin {
 		if (this.settings.uptimer?.token != undefined) {
 			this.uptimerApi = new UptimerApi(this.settings.uptimer.token);
 		}
-		if (this.settings.bot?.autoLaunch) this.botManager.launch();
+		if (this.settings.autoLaunch) this.botManager.launch();
 
 		// const a = this.app.vault.getAbstractFileByPath('0进行中/00Today/未命名 2.md')
 		// if(a) await this.app.vault.append(a,"hello")
@@ -68,7 +68,7 @@ export default class MiraiBot extends Plugin {
 			window.setTimeout(
 				() =>
 					// @ts-ignore
-					this.app.commands.executeCommandById('periodic-notes:open-daily-note'),
+					app.commands.executeCommandById('periodic-notes:open-daily-note'),
 				(window.moment('00:01', 'HH:mm') as unknown as number) - (window.moment() as unknown as number),
 			),
 		);
@@ -77,8 +77,10 @@ export default class MiraiBot extends Plugin {
 		// });
 		// Perform additional things with the ribbon
 		// ribbonIconEl.addClass('my-plugin-ribbon-class');
-
 		// console.log(await this.todoApi.getListIdByName("obsidian"))
+		// await uploadUrlImage(
+		// 	'http://c2cpicdw.qpic.cn/offpic_new/1364835669//1364835669-3890925608-140832EA1204E7D39F6F776CFAEC21FD/0?term=3&is_origin=0',
+		// );
 	}
 
 	async onunload() {

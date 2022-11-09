@@ -19,14 +19,14 @@ export class BotManager {
 	}
 
 	async launch() {
-		if (!this.plugin.settings.bot) {
+		if (!this.plugin.settings.botConfig) {
 			new Notice('Please complete the bot configuration first.');
 			return;
 		}
 		if (this.botOn) await this.stop();
 		// Open a session for bot
 		await this.bot
-			.open(this.plugin.settings.bot)
+			.open(this.plugin.settings.botConfig)
 			.then(() => {
 				new Notice('Bot has been started.');
 				this.initEvents();
