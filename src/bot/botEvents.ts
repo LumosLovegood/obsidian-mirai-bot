@@ -2,8 +2,8 @@ import { Bot, Message, Middleware } from 'mirai-js';
 import { TFile } from 'obsidian';
 import { uploadUrlImage } from 'src/utils/uploadImage';
 import MiraiBot from '../main';
-import { getBiliInfo } from '../scripts/bilibili';
-// import { uploadUrlImage } from '../utils/uploadImage';
+import { getBiliInfo } from '../scripts/bilibili';+
+
 import { getNoteFile } from '../utils/getNoteFile';
 
 export const getBilibiliCover = function (bot: Bot, plugin?: MiraiBot) {
