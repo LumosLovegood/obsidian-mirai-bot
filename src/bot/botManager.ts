@@ -1,14 +1,14 @@
 import { Bot } from 'mirai-js';
 import { Notice } from 'obsidian';
 import MiraiBot from '../main';
-import * as botEvents from './botEvents';
+import * as botEvents from './botControllers';
 
 export class BotManager {
-	private item;
-	private allEvents: { [key: string]: (bot: Bot, plugin: MiraiBot) => any };
 	private readonly bot = new Bot();
+	private allEvents: { [key: string]: (bot: Bot, plugin: MiraiBot) => any };
 	private actEvents = new Map<string, number>();
 	private botOn = false;
+	private item;
 
 	constructor(private readonly plugin: MiraiBot) {
 		this.item = plugin.addStatusBarItem();

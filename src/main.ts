@@ -62,6 +62,10 @@ export default class MiraiBot extends Plugin {
 		}
 		if (this.settings.autoLaunch) this.botManager.launch();
 
+		// @ts-ignore
+		app.commands.executeCommandById('periodic-notes:open-daily-note');
+
+		// eslint-disable-next-line prettier/prettier
 		// const a = this.app.vault.getAbstractFileByPath('0进行中/00Today/未命名 2.md')
 		// if(a) await this.app.vault.append(a,"hello")
 		this.registerInterval(
