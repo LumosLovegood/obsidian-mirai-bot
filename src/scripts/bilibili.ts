@@ -1,4 +1,4 @@
-import { request } from 'obsidian';
+import { getParsedHtml } from './utils';
 
 const headers = {
 	authority: 'www.bilibili.com',
@@ -17,17 +17,17 @@ const headers = {
 	'accept-language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
 };
 export async function getBiliInfo(url: string) {
-	const searchUrl = new URL(url);
-	const res = await request({
-		url: searchUrl.href,
-		method: 'GET',
-		headers: headers,
-	});
-	if (!res) {
-		return null;
-	}
-	const p = new DOMParser();
-	const doc = p.parseFromString(res, 'text/html');
+	const cleanUrl = url.replace(/\?.*/g, '');
+	const doc = await getParsedHtml(cleanUrl, headers);
+	if (!doc) return {};
 	const $ = (s: any) => doc.querySelector(s);
-	return $("meta[property='og:image']")?.content;
+	let cover: string = $("meta[property='og:image']")?.content?.replace(/@.*/g, '');
+	if (!cover) return {};
+	cover = cover.startsWith('http') ? cover : 'https:' + cover;
+	const date = $("meta[itemprop='uploadDate']")?.content;
+	const author = $("meta[name='author']")?.content;
+	const title = $("meta[property='og:title']")?.content?.replace(/_哔哩哔哩_bilibili$/g, '');
+	const link = $("meta[property='og:url']")?.content;
+
+	return { cover, title, author, date, link };
 }

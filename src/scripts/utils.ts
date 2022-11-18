@@ -1,5 +1,5 @@
-import { requestUrl } from 'obsidian';
-import { MiraiBotSettings } from './gui/miraiBotSettingTab';
+import { request, requestUrl } from 'obsidian';
+import { MiraiBotSettings } from '../gui/miraiBotSettingTab';
 
 export const getNoteFile = async function ({ note }: MiraiBotSettings) {
 	let fileName = note.format;
@@ -16,7 +16,7 @@ export const getNoteFile = async function ({ note }: MiraiBotSettings) {
 	return { file, filePath, isTargetFile };
 };
 
-export const uploadUrlImage = async (imageUrl: string | undefined) => {
+export const uploadImageByPicgo = async (imageUrl: string | undefined) => {
 	if (!imageUrl) return;
 	const res = await requestUrl({
 		url: 'http://127.0.0.1:36677/upload',
@@ -25,10 +25,22 @@ export const uploadUrlImage = async (imageUrl: string | undefined) => {
 		body: JSON.stringify({ list: [imageUrl] }),
 	});
 	const data = res.json;
-	console.log(data);
 	if (res.status !== 200) {
 		return;
 	} else {
 		return data.result;
 	}
+};
+
+export const getParsedHtml = async (url: string, headers: any) => {
+	const searchUrl = new URL(url);
+	const res = await request({
+		url: searchUrl.href,
+		method: 'GET',
+		headers: headers,
+	});
+	if (!res) {
+		return;
+	}
+	return new DOMParser().parseFromString(res, 'text/html');
 };

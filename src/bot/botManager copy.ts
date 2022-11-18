@@ -1,16 +1,21 @@
 import { Bot } from 'mirai-js';
 import { Notice } from 'obsidian';
 import MiraiBot from '../main';
-import { commandController, generalController } from './botControllers';
+import * as botEvents from './botControllers';
 
 export class BotManager {
 	private readonly bot = new Bot();
+	private allEvents: { [key: string]: (bot: Bot, plugin: MiraiBot) => any };
+	private actEvents = new Map<string, number>();
 	private botOn = false;
 	private item;
 
 	constructor(private readonly plugin: MiraiBot) {
 		this.item = plugin.addStatusBarItem();
 		this.item.setText('😴BOT OFF');
+		// official events
+		this.allEvents = botEvents as unknown as { [key: string]: (bot: Bot, plugin: MiraiBot) => any };
+		// TODO: UserScript events
 	}
 
 	async launch() {
@@ -43,9 +48,15 @@ export class BotManager {
 			});
 	}
 
+	// Get all functions from botEvents.ts and register them as events
 	initEvents() {
-		this.bot.on('FriendMessage', generalController(this.bot, this.plugin));
-		this.bot.on('FriendMessage', commandController(this.bot, this.plugin));
+		// TODO: add a setting for the default AutoStart events
+		// eslint-disable-next-line no-loops/no-loops
+		for (const key in this.allEvents) {
+			if (Object.prototype.hasOwnProperty.call(this.allEvents, key)) {
+				this.addEvent(key);
+			}
+		}
 		this.bot.on('error', async (err) => {
 			console.error(err);
 			new Notice('The bot is diaconnected.');
@@ -56,5 +67,21 @@ export class BotManager {
 			new Notice('The bot is diaconnected.');
 			await this.stop();
 		});
+	}
+
+	removeEvent(eventName: string) {
+		if (this.actEvents.get(eventName)) {
+			this.bot.off('FriendMessage', this.actEvents.get(eventName));
+			this.actEvents.delete(eventName);
+		}
+	}
+
+	addEvent(eventName: string) {
+		if (!this.actEvents.get(eventName) && this.allEvents[eventName]) {
+			this.actEvents.set(
+				eventName,
+				this.bot.on('FriendMessage', this.allEvents[eventName](this.bot, this.plugin)),
+			);
+		}
 	}
 }

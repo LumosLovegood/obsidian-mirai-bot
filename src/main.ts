@@ -1,6 +1,4 @@
-import { Editor, MarkdownView, Plugin } from 'obsidian';
-import { createTimeLine } from './command/uptimerCommand';
-import { UptimerApi } from './api/uptimerApi';
+import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, MiraiBotSettingTab, MiraiBotSettings } from './gui/miraiBotSettingTab';
 import { BotManager } from './bot/botManager';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -9,7 +7,6 @@ import { log, logging } from './lib/logging';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
-	public uptimerApi: UptimerApi;
 	public botManager: BotManager = new BotManager(this);
 
 	async onload() {
@@ -20,13 +17,6 @@ export default class MiraiBot extends Plugin {
 		await this.loadSettings();
 		// 在右键菜单中注册命令：将选中的文字创建微软待办
 		// Register command in the context menu: Create to Do with the selected text
-		this.addCommand({
-			id: 'add-uptimer',
-			name: 'Insert the uptimer Timeline.',
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				await createTimeLine(this.uptimerApi, editor);
-			},
-		});
 
 		this.addCommand({
 			id: 'open-bot',
@@ -40,26 +30,7 @@ export default class MiraiBot extends Plugin {
 			callback: () => this.botManager.stop(),
 		});
 
-		this.addCommand({
-			id: 'remove-event',
-			name: 'Remove event',
-			callback: () => {
-				this.botManager.removeEvent('echo');
-			},
-		});
-
-		this.addCommand({
-			id: 'add-event',
-			name: 'Add event',
-			callback: () => {
-				this.botManager.addEvent('echo');
-			},
-		});
-
 		this.addSettingTab(new MiraiBotSettingTab(this));
-		if (this.settings.uptimer?.token != undefined) {
-			this.uptimerApi = new UptimerApi(this.settings.uptimer.token);
-		}
 		if (this.settings.autoLaunch) this.botManager.launch();
 
 		// @ts-ignore
