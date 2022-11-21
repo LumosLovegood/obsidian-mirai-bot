@@ -1,5 +1,8 @@
-import { request, requestUrl } from 'obsidian';
-import { MiraiBotSettings } from '../gui/miraiBotSettingTab';
+import { TFile, request, requestUrl } from 'obsidian';
+import type { MiraiBotSettings } from '../gui/miraiBotSettingTab';
+import type MiraiBot from '../main';
+
+const VARIABLE_REGEX = new RegExp(/{{VALUE:([^\n\r}]*)}}/);
 
 export const getNoteFile = async function ({ note }: MiraiBotSettings) {
 	let fileName = note.format;
@@ -43,4 +46,31 @@ export const getParsedHtml = async (url: string, headers: any) => {
 		return;
 	}
 	return new DOMParser().parseFromString(res, 'text/html');
+};
+
+export const createNote = async (data: any, source: string, plugin: MiraiBot) => {
+	const templateFile = app.vault.getAbstractFileByPath(plugin.settings.templateNotePath + '.md');
+	if (!templateFile) return;
+	const { title, link, cover } = data;
+	let template = await app.vault.read(templateFile as TFile);
+	let count = 0;
+	// eslint-disable-next-line no-loops/no-loops
+	while (RegExp(VARIABLE_REGEX).test(template)) {
+		const valueMatch = template.match(VARIABLE_REGEX);
+		template = template.replace(VARIABLE_REGEX, () => {
+			return valueMatch ? data[valueMatch[1]] : '';
+		});
+		console.log(count++);
+	}
+	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
+	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
+	await app.vault.create(newFilePath, template);
+
+	const { file } = await getNoteFile(plugin.settings);
+	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
+	if (cover && cover != '') record = record + `\n![${link}|300](${cover})`;
+
+	await app.vault.append(file as TFile, record);
+
+	return newFilePath;
 };

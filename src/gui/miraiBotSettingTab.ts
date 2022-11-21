@@ -1,17 +1,16 @@
 import { Notice, PluginSettingTab, Setting } from 'obsidian';
-import MiraiBot from '../main';
+import type MiraiBot from '../main';
 import { t } from '../lib/lang';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { LogOptions, log } from '../lib/logging';
+import type { LogOptions, log } from '../lib/logging';
 
 export interface MiraiBotSettings {
-	botConfig:
-		| {
-				baseUrl: string;
-				verifyKey: string;
-				qq: number | undefined;
-		  }
-		| undefined;
+	botConfig: {
+		baseUrl: string;
+		verifyKey: string;
+		qq: number | undefined;
+	};
+	myQQ: number | undefined;
 	autoLaunch: boolean;
 	note: {
 		folder: string;
@@ -21,10 +20,17 @@ export interface MiraiBotSettings {
 	tempFolder: string;
 	// Logging options.
 	loggingOptions: LogOptions;
+	timelineIdentifier: string;
+	templateNotePath: string;
 }
 
 export const DEFAULT_SETTINGS: MiraiBotSettings = {
-	botConfig: undefined,
+	botConfig: {
+		baseUrl: 'http://localhost:10010',
+		verifyKey: '',
+		qq: undefined,
+	},
+	myQQ: undefined,
 	note: {
 		folder: '',
 		format: 'YYYY-MM-DD',
@@ -37,6 +43,8 @@ export const DEFAULT_SETTINGS: MiraiBotSettings = {
 			'': 'info',
 		},
 	},
+	timelineIdentifier: '#### 一些随笔',
+	templateNotePath: '',
 };
 
 export class MiraiBotSettingTab extends PluginSettingTab {
@@ -60,6 +68,46 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 		const span = containerEl.createSpan();
 		span.style.fontSize = '0.8em';
 		span.innerHTML = `Version ${this.plugin.manifest.version} <br /> ${this.plugin.manifest.description} created by ${this.plugin.manifest.author}.`;
+		containerEl.createEl('h3', { text: 'MiraiBot配置连接' });
+		new Setting(containerEl)
+			.setName('Bot连接地址')
+			.setDesc('连接到Bot的BaseUrl')
+			.addText((text) =>
+				text.setValue(this.settings.botConfig.baseUrl ?? '').onChange(async (value) => {
+					this.settings.botConfig.baseUrl = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+		new Setting(containerEl)
+			.setName('Bot验证密钥')
+			.setDesc('连接到Bot需要的verifyKey')
+			.addText((text) =>
+				text.setValue(this.settings.botConfig.verifyKey ?? '').onChange(async (value) => {
+					this.settings.botConfig.verifyKey = value;
+					await this.plugin.saveSettings();
+				}),
+			);
+		new Setting(containerEl).setName('Bot的QQ号码').addText((text) =>
+			text.setValue(this.settings.botConfig.qq?.toString() ?? '').onChange(async (value) => {
+				this.settings.botConfig.qq = parseInt(value);
+				await this.plugin.saveSettings();
+			}),
+		);
+		new Setting(containerEl)
+			.setName('自己的QQ号码')
+			.setDesc('在Bot中过滤自己的消息，避免他人误触')
+			.addText((text) =>
+				text.setValue(this.settings.myQQ?.toString() ?? '').onChange(async (value) => {
+					this.settings.myQQ = parseInt(value);
+					await this.plugin.saveSettings();
+				}),
+			);
+		new Setting(containerEl).setName('Bot自启动').addToggle((toggle) =>
+			toggle.setValue(this.settings.autoLaunch).onChange(async (value) => {
+				this.settings.autoLaunch = value;
+				await this.plugin.saveSettings();
+			}),
+		);
 
 		containerEl.createEl('h3', { text: t('Settings_JournalFormatting') });
 		new Setting(containerEl).setName(t('Settings_JournalFormatting_PeriodicNotes')).addToggle((toggle) =>
@@ -92,8 +140,7 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 		);
 
 		new Setting(containerEl)
-			.setName(t('Settings_JournalFormatting_DateFormat'))
-			.setDesc(`${t('Settings_JournalFormatting_DateFormatDescription')}`)
+			.setName('日记文件夹')
 			.addText((text) =>
 				text.setValue(this.settings.note.folder).onChange(async (value) => {
 					this.settings.note.folder = value;
@@ -103,7 +150,7 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 			.setDisabled(this.settings.note.stayWithPN);
 
 		const notePath = new Setting(containerEl)
-			.setName(t('Settings_JournalFormatting_DateFormat'))
+			.setName('日记格式')
 			.setDesc(
 				`${t('Settings_JournalFormatting_DateFormatDescription')}  ${
 					!this.settings.note.format ? '' : window.moment().format(this.settings.note.format)
@@ -121,6 +168,16 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 				}),
 			)
 			.setDisabled(this.settings.note.stayWithPN);
+
+		new Setting(containerEl)
+			.setName('临时文件夹')
+			.setDesc('将生成的新笔记存放于此')
+			.addText((text) =>
+				text.setValue(this.settings.tempFolder).onChange(async (value) => {
+					this.settings.tempFolder = value;
+					await this.plugin.saveSettings();
+				}),
+			);
 	}
 
 	async hide() {}

@@ -46,7 +46,14 @@ export async function getAtomRead(url: string) {
 	});
 	let content = '';
 	if (contentHtml) {
-		content = turndownService?.turndown(contentHtml)?.replace(/\\(?=\[|\])/gm, '') ?? '';
+		content =
+			turndownService
+				?.turndown(contentHtml)
+				?.replace(/\\(?=\[|\])/gm, '')
+				?.replace(/(?<!\\)\\(?!\\)/gm, '') ?? '';
 	}
-	return { content, author, date, title, link: url };
+	const coverMatch = content?.match(/(?<=!\[\]\().*?(?=\))/);
+	const cover = coverMatch ? coverMatch[0] : '';
+
+	return { content, author, date, title, link: url, cover };
 }

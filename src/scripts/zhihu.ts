@@ -40,5 +40,7 @@ export async function getZhihu(url: string) {
 		}
 		return '';
 	});
-	return { author, title, content, link: cleanUrl, date };
+	const coverMatch = content?.match(/(?<=!\[\]\().*?(?=\))/);
+	const cover = coverMatch ? coverMatch[0] : '';
+	return { author, title, content, link: cleanUrl, date, cover };
 }

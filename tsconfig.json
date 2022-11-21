@@ -2,9 +2,8 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
-    "inlineSourceMap": true,
     "inlineSources": true,
-    "module": "CommonJS",
+    "module": "ES2015",
     "target": "ES6",
     "allowJs": true,
     "noImplicitAny": true,
@@ -12,14 +11,16 @@
     "importHelpers": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-	"strictNullChecks": true,
-    "lib": [
-      "DOM",
-      "ES5",
-      "ES6",
-      "ES7"
+    "types": ["svelte", "node"],
+	  "strictNullChecks": true,
+      "lib": [
+        "DOM",
+        "ES5",
+        "ES6",
+        "ES7"
     ]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "tests"]
+  "include": ["**/*.ts", "types"],
+  "exclude": ["node_modules", "tests"],
+  "extends": "@tsconfig/svelte/tsconfig.json",
 }

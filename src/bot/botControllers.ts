@@ -1,5 +1,5 @@
 import { Bot, Middleware } from 'mirai-js';
-import MiraiBot from '../main';
+import type MiraiBot from '../main';
 import {
 	atomReadService,
 	bilibiliService,
@@ -9,13 +9,14 @@ import {
 	musicService,
 	noteService,
 	picService,
-	textService,
+	testService,
 	wxoaService,
 	zhihuService,
 } from './botServices';
 
 export function generalController(bot: Bot, plugin: MiraiBot) {
 	return new Middleware()
+		.friendFilter([plugin.settings.myQQ ?? 0])
 		.textProcessor()
 		.syncWrapper()
 		.done(async (data) => {
@@ -45,6 +46,7 @@ export function generalController(bot: Bot, plugin: MiraiBot) {
 
 export function commandController(bot: Bot, plugin: MiraiBot) {
 	return new Middleware()
+		.friendFilter([plugin.settings.myQQ ?? 0])
 		.textProcessor()
 		.friendLock({ autoUnlock: true })
 		.syncWrapper()
@@ -54,7 +56,7 @@ export function commandController(bot: Bot, plugin: MiraiBot) {
 				return;
 			}
 			if (data.text === '测试') {
-				await textService(data, bot, plugin);
+				await testService(data, bot, plugin);
 				return;
 			}
 		});
@@ -104,10 +106,6 @@ const appController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 };
 
 const textController = async function (data: any, bot: Bot, plugin: MiraiBot) {
-	// const target = data.text.match(/https?:\/\/((www|m)\.bilibili\.com\/video\/\S*\?|b23\.tv\/\S*)/gm);
-	// if (target) {
-	// 	await bilibiliService(data, bot, plugin, target[0]);
-	// }
 	if (data.text.startsWith('摘录 ')) {
 		await bookService(data, bot, plugin);
 		return;

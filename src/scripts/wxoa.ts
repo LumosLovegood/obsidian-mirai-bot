@@ -43,7 +43,7 @@ export async function getWxoa(url: string) {
 	});
 	let html = $('#js_content')?.innerHTML;
 	html = html?.replace(/<img.*?>/g, (f: string) => {
-		const imgMatch = f.match(/(?<=src=")http.*?(?=\?)/);
+		const imgMatch = f.match(/(?<=src=").*?(?=\?)/);
 		if (imgMatch) {
 			return `\n![](${imgMatch[0]})\n`;
 		}
@@ -55,6 +55,7 @@ export async function getWxoa(url: string) {
 			turndownService
 				?.turndown(html)
 				?.replace(/\\(?=\[|\])/gm, '')
+				?.replace(/(?<!\\)\\(?!\\)/gm, '')
 				?.replace(/\n+ +\n+/gm, '\n') ?? '';
 	}
 	return { content, author, date, title, link, cover };

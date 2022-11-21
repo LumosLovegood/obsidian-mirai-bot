@@ -28,6 +28,8 @@ export async function getBiliInfo(url: string) {
 	const author = $("meta[name='author']")?.content;
 	const title = $("meta[property='og:title']")?.content?.replace(/_哔哩哔哩_bilibili$/g, '');
 	const link = $("meta[property='og:url']")?.content;
+	const desc = $('div#v_desc')?.textContent?.trim();
+	const content = `![](${link})\n` + desc;
 
-	return { cover, title, author, date, link };
+	return { cover, title, author, date, link, content };
 }
