@@ -41,7 +41,7 @@ export class BotView extends ItemView {
 	}
 
 	async getActivities() {
-		const { file } = await getNoteFile(this.plugin.settings);
+		const file = await getNoteFile(this.plugin.settings);
 		const noteContent = (await app.vault.read(file as TFile)).replace(
 			new RegExp(`(.|\n)*${this.plugin.settings.timelineIdentifier}`),
 			'',
@@ -54,10 +54,10 @@ export class BotView extends ItemView {
 				const internalLink = internalLinkMatch ? internalLinkMatch[0] : '';
 
 				const sourceUrlMatch = a.match(/(?<=!\[).*(?=\|300)/);
-				const sourceUrl = sourceUrlMatch ? sourceUrlMatch[0] : '';
+				const sourceUrlList = sourceUrlMatch ? (sourceUrlMatch as string[]) : [];
 
-				const imgUrlMatch = a.match(/(?<=\()http.*?(?=\))/);
-				const imgUrl = imgUrlMatch ? imgUrlMatch[0] : '';
+				const imgUrlMatch = a.match(/(?<=\()http.*?(?=\))/g);
+				const imgUrlList = imgUrlMatch ? (imgUrlMatch as string[]) : [];
 
 				const musicUrlMatch = a.match(/(?<=<iframe src=').*?(?=')/);
 				const musicUrl = musicUrlMatch ? musicUrlMatch[0] : '';
@@ -66,9 +66,9 @@ export class BotView extends ItemView {
 				const location = locationMatch ? locationMatch[0] : '';
 
 				a = a
-					.replace(/\[\[.*\]\]/, '')
-					.replace(/!?\[.*\]\(.*\)/, '')
-					.replace(/<center.*center>/, '');
+					.replace(/\[\[.*\]\]/g, '')
+					.replace(/!?\[.*\]\(.*\)\n?/g, '')
+					.replace(/<center.*center>/g, '');
 
 				const timeRegex = a.match(/^\d\d:\d\d/);
 				const time = timeRegex ? timeRegex[0] : '';
@@ -78,9 +78,13 @@ export class BotView extends ItemView {
 				const icon = brief[0];
 
 				const infoRegex = a.match(/\n(.|\n)*/g);
-				const info = (infoRegex ? infoRegex[0] : '').trim().replace(/\n/g, '<br>').replace('想法 ', '');
+				const info = (infoRegex ? infoRegex[0] : '')
+					.trim()
+					.replace(/\n{2,}/, '')
+					.replace(/\n/g, '<br>')
+					.replace('想法 ', '');
 				console.log(info);
-				return { time, brief, info, icon, location, musicUrl, imgUrl, sourceUrl, internalLink };
+				return { time, brief, info, icon, location, musicUrl, imgUrlList, sourceUrlList, internalLink };
 			});
 		return activities;
 	}

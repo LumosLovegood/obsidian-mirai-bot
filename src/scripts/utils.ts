@@ -7,16 +7,12 @@ const VARIABLE_REGEX = new RegExp(/{{VALUE:([^\n\r}]*)}}/);
 export const getNoteFile = async function ({ note }: MiraiBotSettings) {
 	let fileName = note.format;
 	if (fileName && fileName.endsWith('.md')) fileName = fileName.replace('.md', '');
-	let filePath = note.folder + '/' + window.moment().format(fileName) + '.md';
+	const filePath = note.folder + '/' + window.moment().format(fileName) + '.md';
 	let file = app.vault.getAbstractFileByPath(filePath);
-	let isTargetFile = true;
 	if (!file) {
-		file = app.vault.getAbstractFileByPath('Inbox.md');
-		if (!file) file = await app.vault.create('Inbox.md', '\n');
-		filePath = 'Inbox.md';
-		isTargetFile = false;
+		file = await app.vault.create(filePath, '');
 	}
-	return { file, filePath, isTargetFile };
+	return file;
 };
 
 export const uploadImageByPicgo = async (imageUrl: string | undefined) => {
@@ -48,29 +44,29 @@ export const getParsedHtml = async (url: string, headers: any) => {
 	return new DOMParser().parseFromString(res, 'text/html');
 };
 
-export const createNote = async (data: any, source: string, plugin: MiraiBot) => {
-	const templateFile = app.vault.getAbstractFileByPath(plugin.settings.templateNotePath + '.md');
-	if (!templateFile) return;
+export const createNote = async (data: any, source: string, plugin: MiraiBot, templatePath?: string) => {
 	const { title, link, cover } = data;
+	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
+
+	const file = await getNoteFile(plugin.settings);
+	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
+	if (cover && cover != '') record = record + `\n![${link}|300](${cover})`;
+	await app.vault.append(file as TFile, record);
+
+	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
+	const newFile = app.vault.getAbstractFileByPath(newFilePath);
+	if (newFile) return newFile;
+
+	templatePath = templatePath ? templatePath + '.md' : plugin.settings.templates['templateNotePath'] + '.md';
+	const templateFile = app.vault.getAbstractFileByPath(templatePath);
 	let template = await app.vault.read(templateFile as TFile);
-	let count = 0;
 	// eslint-disable-next-line no-loops/no-loops
 	while (RegExp(VARIABLE_REGEX).test(template)) {
 		const valueMatch = template.match(VARIABLE_REGEX);
 		template = template.replace(VARIABLE_REGEX, () => {
 			return valueMatch ? data[valueMatch[1]] : '';
 		});
-		console.log(count++);
 	}
-	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
-	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
-	await app.vault.create(newFilePath, template);
 
-	const { file } = await getNoteFile(plugin.settings);
-	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
-	if (cover && cover != '') record = record + `\n![${link}|300](${cover})`;
-
-	await app.vault.append(file as TFile, record);
-
-	return newFilePath;
+	return await app.vault.create(newFilePath, template);
 };

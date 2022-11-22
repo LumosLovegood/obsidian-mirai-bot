@@ -1,7 +1,7 @@
 import { Bot } from 'mirai-js';
 import { Notice } from 'obsidian';
-import MiraiBot from '../main';
-import { commandController, generalController } from './botControllers';
+import type MiraiBot from '../main';
+import { generalController } from './botControllers';
 
 export class BotManager {
 	private readonly bot = new Bot();
@@ -45,7 +45,6 @@ export class BotManager {
 
 	initEvents() {
 		this.bot.on('FriendMessage', generalController(this.bot, this.plugin));
-		this.bot.on('FriendMessage', commandController(this.bot, this.plugin));
 		this.bot.on('error', async (err) => {
 			console.error(err);
 			new Notice('The bot is diaconnected.');

@@ -21,7 +21,7 @@ export interface MiraiBotSettings {
 	// Logging options.
 	loggingOptions: LogOptions;
 	timelineIdentifier: string;
-	templateNotePath: string;
+	templates: { [key: string]: string };
 }
 
 export const DEFAULT_SETTINGS: MiraiBotSettings = {
@@ -44,7 +44,10 @@ export const DEFAULT_SETTINGS: MiraiBotSettings = {
 		},
 	},
 	timelineIdentifier: '#### 一些随笔',
-	templateNotePath: '',
+	templates: {
+		templateNotePath: '',
+		templateBookPath: '',
+	},
 };
 
 export class MiraiBotSettingTab extends PluginSettingTab {

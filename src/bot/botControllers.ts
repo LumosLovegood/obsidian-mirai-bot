@@ -4,7 +4,7 @@ import {
 	atomReadService,
 	bilibiliService,
 	bookService,
-	ideaService,
+	gushiwenService,
 	locationService,
 	musicService,
 	noteService,
@@ -18,6 +18,7 @@ export function generalController(bot: Bot, plugin: MiraiBot) {
 	return new Middleware()
 		.friendFilter([plugin.settings.myQQ ?? 0])
 		.textProcessor()
+		.friendLock({ autoUnlock: true })
 		.syncWrapper()
 		.done(async (data) => {
 			console.log(data);
@@ -27,54 +28,31 @@ export function generalController(bot: Bot, plugin: MiraiBot) {
 					await textController(data, bot, plugin);
 					break;
 				case 'Image':
-					await picService(data, bot, plugin, 'note');
+					data.unlock();
+					await picService(data, bot, plugin, true);
 					break;
 				case 'App':
+					data.unlock();
 					await appController(data, bot, plugin);
 					break;
 				case 'Quote':
+					data.unlock();
 					await quoteController(data, bot, plugin);
 					break;
 				case 'MusicShare':
+					data.unlock();
 					await musicService(data, bot, plugin);
 					break;
 				default:
+					data.unlock();
 					await defaultController(data, bot, plugin);
 			}
 		});
 }
 
-export function commandController(bot: Bot, plugin: MiraiBot) {
-	return new Middleware()
-		.friendFilter([plugin.settings.myQQ ?? 0])
-		.textProcessor()
-		.friendLock({ autoUnlock: true })
-		.syncWrapper()
-		.done(async (data) => {
-			if (['写点东西', '记点东西', '在吗'].includes(data.text)) {
-				await noteService(data, bot, plugin);
-				return;
-			}
-			if (data.text === '测试') {
-				await testService(data, bot, plugin);
-				return;
-			}
-		});
-}
-
 const quoteController = async function (data: any, bot: Bot, plugin: MiraiBot) {
-	const originData = await bot.getMessageById({ messageId: data.messageChain[1].id, target: data.sender.id });
-	const type = originData.messageChain[1]?.type;
-	switch (type) {
-		case 'Image':
-			if (data.text === '封面') {
-				await picService(originData, bot, plugin, 'banner');
-			}
-			break;
-		case 'App':
-			await ideaService(data, bot, undefined, plugin);
-			break;
-	}
+	// console.log(data.messageChain);
+	// const originData = await bot.getMessageById({ messageId: data.messageChain[1].id, target: data.sender.id });
 };
 
 const appController = async function (data: any, bot: Bot, plugin: MiraiBot) {
@@ -107,11 +85,25 @@ const appController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 
 const textController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 	if (data.text.startsWith('摘录 ')) {
+		data.unlock();
 		await bookService(data, bot, plugin);
 		return;
 	}
 	if (data.text.endsWith('vivoBusiness=infodetail')) {
+		data.unlock();
 		await atomReadService(data, bot, plugin);
+		return;
+	}
+	if (['写点东西', '记点东西', '在吗'].includes(data.text)) {
+		await noteService(data, bot, plugin);
+		return;
+	}
+	if (data.text === '测试') {
+		await testService(data, bot, plugin);
+		return;
+	}
+	if (data.text.endsWith('https://m.gushiwen.cn/app')) {
+		await gushiwenService(data, bot, plugin);
 	}
 };
 

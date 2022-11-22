@@ -31,9 +31,9 @@ export async function getWxoa(url: string) {
 	const cover = $('meta[property="og:image"]')?.content ?? '';
 	// @ts-ignore
 	const link = $("meta[property='og:url']")?.content ?? '';
-	let date = 0;
+	let date = '';
 	const dateMatch = $('#activity-detail > script:nth-child(38)')?.textContent?.match(/(?<=ct = ")\d+/gm);
-	if (dateMatch) date = parseInt(dateMatch[0]) * 1000;
+	if (dateMatch) date = window.moment(parseInt(dateMatch[0]) * 1000).format('YYYY-MM-DD');
 
 	const turndownService = new TurndownService({
 		headingStyle: 'atx',

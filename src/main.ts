@@ -34,6 +34,12 @@ export default class MiraiBot extends Plugin {
 			callback: () => this.botManager.stop(),
 		});
 
+		this.addCommand({
+			id: 'open-timeline-view',
+			name: 'Open Bot Timeline',
+			callback: () => this.activateBotView(),
+		});
+
 		this.addSettingTab(new MiraiBotSettingTab(this));
 		if (this.settings.autoLaunch) this.botManager.launch();
 
@@ -46,7 +52,9 @@ export default class MiraiBot extends Plugin {
 				() =>
 					// @ts-ignore
 					app.commands.executeCommandById('periodic-notes:open-daily-note'),
-				(window.moment('00:01', 'HH:mm') as unknown as number) - (window.moment() as unknown as number),
+				(window.moment('00:01', 'HH:mm') as unknown as number) +
+					1000 * 3600 * 24 -
+					(window.moment() as unknown as number),
 			),
 		);
 	}
