@@ -3,7 +3,6 @@ import type MiraiBot from 'src/main';
 import { getNoteFile } from 'src/scripts/utils';
 import store from 'src/store';
 import Component from './timeline.svelte';
-
 export const VIEW_TYPE_BOT = 'bot-view';
 export class BotView extends ItemView {
 	component: Component;
@@ -53,7 +52,7 @@ export class BotView extends ItemView {
 				const internalLinkMatch = a.match(/(?<=\[\[).*(?=\]\])/);
 				const internalLink = internalLinkMatch ? internalLinkMatch[0] : '';
 
-				const sourceUrlMatch = a.match(/(?<=!\[).*(?=\|300)/);
+				const sourceUrlMatch = a.match(/(?<=!\[).*(?=\|300)/g);
 				const sourceUrlList = sourceUrlMatch ? (sourceUrlMatch as string[]) : [];
 
 				const imgUrlMatch = a.match(/(?<=\()http.*?(?=\))/g);
@@ -80,7 +79,10 @@ export class BotView extends ItemView {
 				const infoRegex = a.match(/\n(.|\n)*/g);
 				const info = (infoRegex ? infoRegex[0] : '')
 					.trim()
-					.replace(/\n{2,}/, '')
+					.replace(/https?:.*?(?=\s|$)/g, (r) => {
+						return `<a href="obsidian://web-open?url=${encodeURIComponent(r)}">${r}</a>`;
+					})
+					.replace(/\n{2,}/g, '')
 					.replace(/\n/g, '<br>')
 					.replace('想法 ', '');
 				console.log(info);

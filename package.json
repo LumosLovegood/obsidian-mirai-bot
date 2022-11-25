@@ -41,6 +41,8 @@
 		"eventemitter2": "^6.4.5",
 		"mirai-js": "^2.8.7",
 		"node-fetch": "^2.6.1",
+		"obsidian-dataview": "^0.5.51",
+		"obsidian-svelte": "^0.0.37",
 		"svelte-vertical-timeline": "^0.0.2",
 		"turndown": "^7.1.1"
 	}

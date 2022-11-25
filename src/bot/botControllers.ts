@@ -9,7 +9,7 @@ import {
 	musicService,
 	noteService,
 	picService,
-	testService,
+	textService,
 	wxoaService,
 	zhihuService,
 } from './botServices';
@@ -94,17 +94,15 @@ const textController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 		await atomReadService(data, bot, plugin);
 		return;
 	}
-	if (['写点东西', '记点东西', '在吗'].includes(data.text)) {
+	if (['记录', '在吗'].includes(data.text)) {
 		await noteService(data, bot, plugin);
-		return;
-	}
-	if (data.text === '测试') {
-		await testService(data, bot, plugin);
 		return;
 	}
 	if (data.text.endsWith('https://m.gushiwen.cn/app')) {
 		await gushiwenService(data, bot, plugin);
+		return;
 	}
+	await textService(data.text, bot, plugin);
 };
 
 const defaultController = async function (data: any, bot: Bot, plugin: MiraiBot) {};

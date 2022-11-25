@@ -16,32 +16,25 @@ export const noteService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	} = data;
 	const vault = app.vault;
 	await bot.sendMessage({ friend: id, message: new Message().addText('有在认真听~') });
-	const message = new Message();
-	const nowTitle = '\n- ' + window.moment().format('HH:mm') + ' ✏️随笔: \n\t';
-
+	const nowTitle = '\n- ' + window.moment().format('HH:mm') + ' ✏️随笔: ';
 	const file = await getNoteFile(plugin.settings);
-
-	vault.append(file as TFile, nowTitle);
-	message.addText('记录完成√\n---------\n');
+	const message = new Message().addText('记录完成~');
 	let next = await waitFor.messageChain();
 	let note = next[1];
 	let isFirst = true;
 	// eslint-disable-next-line no-loops/no-loops
-	while (!['写完了', '记录完毕', '结束'].includes(note.text ?? '')) {
+	while (note.type != 'Plain' || !['结束'].includes(note.text)) {
 		if (note.type === 'Plain') {
-			let plain = note.text ?? '';
-			if (!isFirst && plain != '。') plain = '，' + plain;
-			else isFirst = false;
-			if (plain?.endsWith('。')) {
-				plain = plain.replace(/。$/g, '\n');
-				isFirst = true;
+			let plain = '\n\t' + note.text;
+			if (isFirst) {
+				plain = nowTitle + plain;
 			}
-			vault.append(file as TFile, plain.replace(/\n/gm, '\n\t'));
-			message.addText(plain);
+			message.addText(isFirst ? '\n---------\n' + note.text : note.text);
+			vault.append(file as TFile, plain);
+			isFirst = false;
 		} else if (note.type === 'Image') {
 			await picService(data, bot, plugin, false, next);
 			message.addImageUrl(note.url ?? '');
-			isFirst = true;
 		}
 		next = await waitFor.messageChain();
 		note = next[1];
@@ -93,7 +86,7 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url
 	const { cover, author } = infoData;
 	if (!cover) return;
 
-	const newFile = await createNote(infoData, '📺B站视频', plugin);
+	const newFile = await createNote(infoData, '📺B站视频', plugin, plugin.settings.templates['templateBiliPath']);
 
 	await bot.sendMessage({
 		friend: senderId,
@@ -105,7 +98,7 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url
 export const zhihuService = async (data: any, bot: Bot, plugin: MiraiBot, url: string) => {
 	const infoData = await getZhihu(url);
 	const { author, cover } = infoData;
-	if (!author) return;
+	if (!author) return await textService(url, bot, plugin);
 	const newFile = await createNote(infoData, '🔎知乎问答', plugin);
 	let message = new Message().addText(`“${author}”的知乎回答已记录~`);
 	message = cover && cover != '' ? message.addImageUrl(cover) : message;
@@ -180,7 +173,7 @@ export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	if (id) {
 		const file = await getNoteFile(plugin.settings);
 		const iframe = `<center><iframe src='https://notion.busiyi.world/music-player/?server=${server}&type=song&id=${id}&dark'  height=100 width='80%'></iframe></center>`;
-		app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} 🎵记录音乐: ` + iframe).then(() => {
+		app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} 🎵记录音乐: \n` + iframe).then(() => {
 			bot.sendMessage({
 				friend: data.sender.id,
 				message: new Message().addText('🎵分享的音乐记下来了~'),
@@ -215,7 +208,15 @@ export const ideaService = async (
 	}
 };
 
-export const testService = async (data: any, bot: Bot, plugin: MiraiBot) => {};
+export const textService = async (text: string, bot: Bot, plugin: MiraiBot) => {
+	const file = await getNoteFile(plugin.settings);
+	app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} 📒临时记录: \n` + text?.trim()).then(() => {
+		bot.sendMessage({
+			friend: plugin.settings.myQQ,
+			message: new Message().addText('消息已记录~'),
+		});
+	});
+};
 
 export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	const file = await getNoteFile(plugin.settings);

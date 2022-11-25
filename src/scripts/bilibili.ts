@@ -21,6 +21,8 @@ export async function getBiliInfo(url: string) {
 	const doc = await getParsedHtml(cleanUrl, headers);
 	if (!doc) return {};
 	const $ = (s: any) => doc.querySelector(s);
+	const $$ = (s: any) => doc.querySelectorAll(s);
+
 	let cover: string = $("meta[property='og:image']")?.content?.replace(/@.*/g, '');
 	if (!cover) return {};
 	cover = cover.startsWith('http') ? cover : 'https:' + cover;
@@ -28,8 +30,15 @@ export async function getBiliInfo(url: string) {
 	const author = $("meta[name='author']")?.content;
 	const title = $("meta[property='og:title']")?.content?.replace(/_哔哩哔哩_bilibili$/g, '');
 	const link = $("meta[property='og:url']")?.content;
-	const desc = $('div#v_desc')?.textContent?.trim();
-	const content = `![](${link})\n` + desc;
+	const content = $('div#v_desc')?.textContent?.trim()?.replace(/收起$/, '');
+	const partList = $$('script')[3]?.textContent?.match(/(?<=part":").+?(?=")/g);
+	let parts = '';
+	if ($('h3')) {
+		// eslint-disable-next-line no-loops/no-loops
+		for (let i = 0; i < partList.length; i++) {
+			parts += `[P${i + 1}📺 ${partList[i]}](${link}?p=${i + 1})\n`;
+		}
+	}
 
-	return { cover, title, author, date, link, content };
+	return { cover, title, author, date, link, content, parts: parts === '' ? link : parts };
 }

@@ -21,7 +21,7 @@ export async function getZhihu(url: string) {
 	if (!doc) return {};
 	const $ = (s: string) => doc.querySelector(s);
 	// @ts-ignore
-	const date = $('meta[itemprop="dateModified"]').content;
+	const date = $('meta[itemprop="dateModified"]')?.content ?? $('meta[itemprop="dateCreated"]')?.content;
 	// @ts-ignore
 	const author = $('div.AuthorInfo>meta[itemprop="name"]')?.content;
 	const title = $('h1')?.textContent;

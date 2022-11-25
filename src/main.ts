@@ -6,6 +6,7 @@ import { BotManager } from './bot/botManager';
 import { t } from './lib/lang';
 import { log, logging } from './lib/logging';
 import { BotView, VIEW_TYPE_BOT } from './view/botView';
+import { getNoteFile } from './scripts/utils';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
@@ -44,14 +45,12 @@ export default class MiraiBot extends Plugin {
 		if (this.settings.autoLaunch) this.botManager.launch();
 
 		// @ts-ignore
-		app.commands.executeCommandById('periodic-notes:open-daily-note');
+		// app.commands.executeCommandById('periodic-notes:open-daily-note');
 
 		// eslint-disable-next-line prettier/prettier
 		this.registerInterval(
 			window.setTimeout(
-				() =>
-					// @ts-ignore
-					app.commands.executeCommandById('periodic-notes:open-daily-note'),
+				() => getNoteFile(this.settings),
 				(window.moment('00:01', 'HH:mm') as unknown as number) +
 					1000 * 3600 * 24 -
 					(window.moment() as unknown as number),
