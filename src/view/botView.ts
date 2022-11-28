@@ -1,7 +1,9 @@
 import { ItemView, TFile, WorkspaceLeaf } from 'obsidian';
 import type MiraiBot from 'src/main';
-import { getNoteFile } from 'src/scripts/utils';
+import { getDailyNote } from 'src/utils';
 import store from 'src/store';
+import { getRealFilePath } from '../utils';
+import type { ActivityRecord, RecordDetail } from '../type';
 import Component from './timeline.svelte';
 export const VIEW_TYPE_BOT = 'bot-view';
 export class BotView extends ItemView {
@@ -24,12 +26,10 @@ export class BotView extends ItemView {
 
 	async onOpen() {
 		store.plugin.set(this.plugin);
-		const vaultName = app.vault.getName();
 
 		this.component = new Component({
 			target: this.contentEl,
 			props: {
-				vaultName,
 				activities: await this.getActivities(),
 			},
 		});
@@ -40,54 +40,54 @@ export class BotView extends ItemView {
 	}
 
 	async getActivities() {
-		const file = await getNoteFile(this.plugin.settings);
-		const noteContent = (await app.vault.read(file as TFile)).replace(
-			new RegExp(`(.|\n)*${this.plugin.settings.timelineIdentifier}`),
+		const vaultName = encodeURI(app.vault.getName());
+		const file = await getDailyNote(this.plugin.settings);
+		const records = (await app.vault.read(file as TFile)).replace(
+			new RegExp(`.*${this.plugin.settings.timelineIdentifier}`, 's'),
 			'',
 		);
-		const activities = noteContent
-			.split('\n- ')
-			.filter((a) => a != '\n' && a != '')
-			.map((a) => {
-				const internalLinkMatch = a.match(/(?<=\[\[).*(?=\]\])/);
-				const internalLink = internalLinkMatch ? internalLinkMatch[0] : '';
-
-				const sourceUrlMatch = a.match(/(?<=!\[).*(?=\|300)/g);
-				const sourceUrlList = sourceUrlMatch ? (sourceUrlMatch as string[]) : [];
-
-				const imgUrlMatch = a.match(/(?<=\()http.*?(?=\))/g);
-				const imgUrlList = imgUrlMatch ? (imgUrlMatch as string[]) : [];
-
-				const musicUrlMatch = a.match(/(?<=<iframe src=').*?(?=')/);
-				const musicUrl = musicUrlMatch ? musicUrlMatch[0] : '';
-
-				const locationMatch = a.match(/(?<=\(geo:).*(?=\))/);
-				const location = locationMatch ? locationMatch[0] : '';
-
-				a = a
-					.replace(/\[\[.*\]\]/g, '')
-					.replace(/!?\[.*\]\(.*\)\n?/g, '')
-					.replace(/<center.*center>/g, '');
-
-				const timeRegex = a.match(/^\d\d:\d\d/);
-				const time = timeRegex ? timeRegex[0] : '';
-
-				const briefRegex = a.match(/(?<= ).*?:.*$/gm);
-				const brief = briefRegex ? briefRegex[0] : '';
-				const icon = brief[0];
-
-				const infoRegex = a.match(/\n(.|\n)*/g);
-				const info = (infoRegex ? infoRegex[0] : '')
-					.trim()
+		let activities: ActivityRecord[] = [];
+		const recordReg = /(?:\n|^)- (\d\d:\d\d) (.+?): ?(?: \[\[(.+)\]\])?\n\t?((?:.|\n)*?)(?=(?:\n- |$))/g;
+		activities = [...records.matchAll(recordReg)].map((item) => {
+			const time = item[1] ?? '';
+			const category = item[2] ?? '';
+			const brief = item[3] ?? '';
+			const details: RecordDetail[] = item[4]?.split('\n').map((line) => {
+				line = line.trim();
+				let match;
+				if (line.match(/!\[.*?audio.*?\]\((.*)\)/)) {
+					match = line.match(/!\[.*?audio.*?\]\((.*)\)/);
+					const content = match ? getRealFilePath(match[1]) : '';
+					return { type: 'audio', content };
+				}
+				if (line.match(/!\[.*\]\((.*)\)/)) {
+					match = line.match(/!\[.*\]\((.*)\)/);
+					const content = match ? getRealFilePath(match[1]) : '';
+					return { type: 'image', content };
+				}
+				if (line.match(/(?<=<iframe src=').*?(?=')/)) {
+					match = line.match(/(?<=<iframe src=').*?(?=')/);
+					return { type: 'iframe', content: match ? match[0] : '' };
+				}
+				const content = line
+					.replace(/\[\[(.*)\]\]/g, function (...args) {
+						const fileName = args[1];
+						return `<a href="obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(fileName)}&openmode=true" style="text-decoration-line: none;>${fileName}</a>`;
+					})
+					.replace(/(?<!!)\[(.*)\]\((.*)\)/g, function (...args) {
+						const title = args[1];
+						const url = args[2];
+						return `<a href="obsidian://web-open?url=${encodeURIComponent(
+							url,
+						)}" style="text-decoration-line: none;">${title}</a>`;
+					})
 					.replace(/https?:.*?(?=\s|$)/g, (r) => {
 						return `<a href="obsidian://web-open?url=${encodeURIComponent(r)}">${r}</a>`;
-					})
-					.replace(/\n{2,}/g, '')
-					.replace(/\n/g, '<br>')
-					.replace('想法 ', '');
-				console.log(info);
-				return { time, brief, info, icon, location, musicUrl, imgUrlList, sourceUrlList, internalLink };
+					});
+				return { type: 'text', content };
 			});
+			return { time, category, brief, details };
+		});
 		return activities;
 	}
 }

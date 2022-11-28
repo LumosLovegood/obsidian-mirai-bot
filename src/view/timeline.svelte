@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { TFile } from 'obsidian';
+	import type { ActivityRecord } from 'src/type';
 	import {
 		Timeline,
 		TimelineItem,
@@ -12,18 +14,28 @@
 	// import type MiraiBot from '../main'
 	// let plugin: MiraiBot;
 	// store.plugin.subscribe((p) => (plugin = p));
-	export let vaultName: string;
-	export let activities: {
-		time: string;
-		brief: string;
-		info: string;
-		icon: string;
-		location: string;
-		musicUrl: string;
-		imgUrlList: string[];
-		sourceUrlList: string[];
-		internalLink: string;
-	}[];
+	export let activities: ActivityRecord[];
+	const vaultName = encodeURI(app.vault.getName());
+	let ctrlDown: boolean;
+	document.onkeydown = function(e) {
+		if (e.ctrlKey) ctrlDown = true;
+	}
+	document.onkeyup = function(e) {
+		if (e.key==='Control') ctrlDown = false;
+	}
+	$: popover = function(event:any){
+		const hoverEditor = app.plugins.plugins["obsidian-hover-editor"];
+		const filePath = event.target.innerText;
+		console.log('🚀 ~ filePath', filePath);
+		const tfile = app.metadataCache.getFirstLinkpathDest(filePath, '');
+		if (!ctrlDown) return;
+		setTimeout(() => {
+			const leaf = hoverEditor.spawnPopover(undefined, () => {
+				app.workspace.setActiveLeaf(leaf,{focus:true});
+			});
+			leaf.openFile(tfile as TFile);
+		},500)
+	}
 </script>
 <Timeline position="alternate">
 	{#each activities as activity}
@@ -37,32 +49,28 @@
 			</TimelineSeparator>
 			<TimelineContent>
 				<span class="brief">
-					{activity.brief}
-					{#if activity.internalLink != ''}
-						<a href="obsidian://advanced-uri?vault={encodeURI(vaultName)}&filename={encodeURI(activity.internalLink)}&newpane=true"
-							class="internal-link">
-							{activity.internalLink}
-						</a>
-					{/if}
+					{activity.category}: 《						<!-- svelte-ignore a11y-mouse-events-have-key-events -->
+					<a on:mouseover={popover} href="obsidian://advanced-uri?vault={vaultName}&filename={encodeURI(activity.brief)}&openmode=true" style="text-decoration-line: none;color:#8bc24c">
+						{activity.brief}
+					</a>》
 				</span>
-				{#each activity.imgUrlList as imgUrl}
-					{#each activity.sourceUrlList as sourceUrl}
+				{#each activity.details as {type, content}}
+				{#if type === 'image'}
 					<div class='img-wrapper'>
-						<a href={'obsidian://web-open?url=' + encodeURIComponent(sourceUrl)}>
-						<!-- <a href={sourceUrl}> -->
-							<img src={imgUrl} alt={imgUrl} class="img-cover" />
+						<a href={'obsidian://web-open?url=' + encodeURIComponent(content)}>
+							<img src={content} alt={content} class="img-cover" />
 						</a>
 					</div>
-					{/each}
-				{/each}
-				{#if activity.musicUrl != ''}
-					<br /><iframe src={activity.musicUrl} title="Music Share" height="100" class="iframe-music" />
-				{/if}
-				{#if activity.info != ''}
+				{:else if type === 'audio'}
+					<audio controls src={content} style="margin:10px"></audio>
+				{:else if type === 'iframe'}
+					<br /><iframe src={content} title="Music Share" height="100" class="iframe-music" />
+				{:else}
 					<div class="info-block">
-						{@html activity.info}
+						{@html content}
 					</div>
 				{/if}
+			{/each}
 			</TimelineContent>
 		</TimelineItem>
 	{/each}
@@ -101,20 +109,17 @@
 		padding-bottom: 30%;
 		position: relative;
 		margin: auto;
+		margin-bottom: 10px;
+		margin-top: 10px;
 	}
 	.img-cover {
 		position: absolute;
-		margin: 10px;
 		object-fit: cover;
 		width: 100%;
 		height: 100%;
 		border-radius: 15px;
 		box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.46), 0 2px 12px 0 rgba(0, 0, 0, 0.12),
 			0 4px 5px -3px rgba(0, 0, 0, 0.2);
-	}
-
-	.internal-link {
-		text-decoration-line: none;
 	}
 	.time {
 		font-family: 'SentyZHAO 新蒂赵孟頫';

@@ -1,4 +1,4 @@
-import { getParsedHtml } from './utils';
+import { getParsedHtml } from '../utils';
 
 const headers = {
 	'Content-Type': 'text/html; charset=utf-8',

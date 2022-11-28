@@ -1,4 +1,4 @@
-import { getParsedHtml } from './utils';
+import { getParsedHtml } from '../utils';
 
 const headers = {
 	authority: 'www.bilibili.com',

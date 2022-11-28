@@ -19,7 +19,6 @@ export class BotManager {
 			return;
 		}
 		if (this.botOn) await this.stop();
-		// Open a session for bot
 		await this.bot
 			.open(this.plugin.settings.botConfig)
 			.then(() => {

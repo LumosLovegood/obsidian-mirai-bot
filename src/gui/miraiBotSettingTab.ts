@@ -1,28 +1,9 @@
 import { Notice, PluginSettingTab, Setting } from 'obsidian';
+import type { MiraiBotSettings } from 'src/type';
 import type MiraiBot from '../main';
 import { t } from '../lib/lang';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { LogOptions, log } from '../lib/logging';
-
-export interface MiraiBotSettings {
-	botConfig: {
-		baseUrl: string;
-		verifyKey: string;
-		qq: number | undefined;
-	};
-	myQQ: number | undefined;
-	autoLaunch: boolean;
-	note: {
-		folder: string;
-		format: string;
-		stayWithPN: boolean;
-	};
-	tempFolder: string;
-	// Logging options.
-	loggingOptions: LogOptions;
-	timelineIdentifier: string;
-	templates: { [key: string]: string };
-}
 
 export const DEFAULT_SETTINGS: MiraiBotSettings = {
 	botConfig: {
@@ -36,6 +17,7 @@ export const DEFAULT_SETTINGS: MiraiBotSettings = {
 		format: 'YYYY-MM-DD',
 		stayWithPN: false,
 	},
+	autoCreateDailyNote: false,
 	autoLaunch: false,
 	tempFolder: '',
 	loggingOptions: {
@@ -48,6 +30,9 @@ export const DEFAULT_SETTINGS: MiraiBotSettings = {
 		templateNotePath: '',
 		templateBookPath: '',
 	},
+	enableImageUpload: false,
+	imageFolder: 'Attachments',
+	youzackIndex: 1,
 };
 
 export class MiraiBotSettingTab extends PluginSettingTab {
@@ -116,10 +101,7 @@ export class MiraiBotSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName(t('Settings_JournalFormatting_PeriodicNotes')).addToggle((toggle) =>
 			toggle.setValue(this.settings.note.stayWithPN).onChange(async (value) => {
 				if (value) {
-					// @ts-ignore
-					const PNsetting =
-						// @ts-ignore
-						app.plugins.plugins['periodic-notes'];
+					const PNsetting = app.plugins.plugins['periodic-notes'];
 					if (PNsetting) {
 						const { format, folder } = PNsetting.settings.daily;
 						this.settings.note = {

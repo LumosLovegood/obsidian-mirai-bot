@@ -1,4 +1,5 @@
-import { Bot, Middleware } from 'mirai-js';
+import { Bot, Message, Middleware } from 'mirai-js';
+import { getYouzack } from 'src/scripts/youzack';
 import type MiraiBot from '../main';
 import {
 	atomReadService,
@@ -10,6 +11,7 @@ import {
 	noteService,
 	picService,
 	textService,
+	voiceService,
 	wxoaService,
 	zhihuService,
 } from './botServices';
@@ -42,6 +44,10 @@ export function generalController(bot: Bot, plugin: MiraiBot) {
 				case 'MusicShare':
 					data.unlock();
 					await musicService(data, bot, plugin);
+					break;
+				case 'Voice':
+					data.unlock();
+					await voiceService(data, bot, plugin);
 					break;
 				default:
 					data.unlock();
@@ -94,15 +100,35 @@ const textController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 		await atomReadService(data, bot, plugin);
 		return;
 	}
+	if (data.text.endsWith('https://m.gushiwen.cn/app')) {
+		data.unlock();
+		await gushiwenService(data, bot, plugin);
+		return;
+	}
 	if (['记录', '在吗'].includes(data.text)) {
 		await noteService(data, bot, plugin);
 		return;
 	}
-	if (data.text.endsWith('https://m.gushiwen.cn/app')) {
-		await gushiwenService(data, bot, plugin);
+	if ('听力' === data.text) {
+		const index = plugin.settings.youzackIndex;
+		const path = await getYouzack(plugin.settings.imageFolder, index);
+		if (index < 99) {
+			plugin.settings.youzackIndex = index + 1;
+			plugin.saveSettings();
+		}
+		setTimeout(
+			() =>
+				bot.sendMessage({
+					friend: data.sender.id,
+					message: new Message().addVoicePath(path),
+				}),
+			5000,
+		);
 		return;
 	}
-	await textService(data.text, bot, plugin);
+	if (!data.text.startsWith('想法 ')) {
+		await textService(data.text, bot, plugin);
+	}
 };
 
 const defaultController = async function (data: any, bot: Bot, plugin: MiraiBot) {};

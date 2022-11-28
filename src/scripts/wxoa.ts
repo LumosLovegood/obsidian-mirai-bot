@@ -1,5 +1,5 @@
 import TurndownService from 'turndown';
-import { getParsedHtml } from './utils';
+import { getParsedHtml } from '../utils';
 
 const headers = {
 	authority: 'mp.weixin.qq.com',

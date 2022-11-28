@@ -1,12 +1,13 @@
 import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, MiraiBotSettingTab } from './gui/miraiBotSettingTab';
-import type { MiraiBotSettings } from './gui/miraiBotSettingTab';
 import { BotManager } from './bot/botManager';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { t } from './lib/lang';
 import { log, logging } from './lib/logging';
 import { BotView, VIEW_TYPE_BOT } from './view/botView';
-import { getNoteFile } from './scripts/utils';
+import { autoCreateDailyNote, createBotFolder } from './utils';
+import type { MiraiBotSettings, Parameters } from './type';
+import { protocolHandler } from './protocolHandlers';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
@@ -44,18 +45,12 @@ export default class MiraiBot extends Plugin {
 		this.addSettingTab(new MiraiBotSettingTab(this));
 		if (this.settings.autoLaunch) this.botManager.launch();
 
-		// @ts-ignore
-		// app.commands.executeCommandById('periodic-notes:open-daily-note');
+		this.registerObsidianProtocolHandler('mirai-bot', async (e) => {
+			await protocolHandler(e as unknown as Parameters, this.settings);
+		});
 
-		// eslint-disable-next-line prettier/prettier
-		this.registerInterval(
-			window.setTimeout(
-				() => getNoteFile(this.settings),
-				(window.moment('00:01', 'HH:mm') as unknown as number) +
-					1000 * 3600 * 24 -
-					(window.moment() as unknown as number),
-			),
-		);
+		autoCreateDailyNote(this);
+		await createBotFolder();
 	}
 
 	async onunload() {
