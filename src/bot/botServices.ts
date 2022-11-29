@@ -6,6 +6,7 @@ import { getBookInfo, searchDouban } from 'src/scripts/doubanBook';
 import { getDailyNote, imgHandler, saveVoice } from 'src/utils';
 import { getWxoa } from 'src/scripts/wxoa';
 import { getZhihu } from 'src/scripts/zhihu';
+import { getWod } from 'src/scripts/wod';
 import type MiraiBot from '../main';
 import { createNoteFromRecord } from '../utils';
 
@@ -82,7 +83,7 @@ export const picService = async (data: any, bot: Bot, plugin: MiraiBot, isRercor
 };
 
 export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url: string) => {
-	const senderId = data.sender.id;
+	const senderId = plugin.settings.myQQ;
 	const infoData = await getBiliInfo(url);
 	const { cover, author } = infoData;
 	if (!cover) return;
@@ -109,7 +110,7 @@ export const zhihuService = async (data: any, bot: Bot, plugin: MiraiBot, url: s
 	let message = new Message().addText(`“${author}”的知乎回答已记录~`);
 	message = cover && cover != '' ? message.addImageUrl(cover) : message;
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: message,
 	});
 	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
@@ -122,7 +123,7 @@ export const wxoaService = async (data: any, bot: Bot, plugin: MiraiBot, url: st
 	const newFile = await createNoteFromRecord(infoData, '📄微信文章', plugin);
 
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的微信文章已记录~`).addImageUrl(cover),
 	});
 	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
@@ -136,7 +137,7 @@ export const atomReadService = async (data: any, bot: Bot, plugin: MiraiBot) => 
 	const newFile = await createNoteFromRecord(infoData, '📄原子阅读', plugin);
 
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的原子阅读文章已记录~`).addImageUrl(cover ?? ''),
 	});
 	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
@@ -150,13 +151,13 @@ export const locationService = async (data: any, bot: Bot, plugin: MiraiBot, app
 		.append(file as TFile, note)
 		.then(() => {
 			bot.sendMessage({
-				friend: data.sender.id,
+				friend: plugin.settings.myQQ,
 				message: new Message().addText('🚩位置记录下来了~'),
 			});
 		})
 		.catch(() => {
 			bot.sendMessage({
-				friend: data.sender.id,
+				friend: plugin.settings.myQQ,
 				message: new Message().addText('位置无法记录'),
 			});
 		});
@@ -171,7 +172,7 @@ export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	else if (kind === 'NeteaseCloudMusic') server = 'netease';
 	else {
 		bot.sendMessage({
-			friend: data.sender.id,
+			friend: plugin.settings.myQQ,
 			message: new Message().addText('暂不支持该平台的分享哦~'),
 		});
 		return;
@@ -181,7 +182,7 @@ export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 		const iframe = `<center><iframe src='https://notion.busiyi.world/music-player/?server=${server}&type=song&id=${id}&dark'  height=100 width='80%'></iframe></center>`;
 		app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} 🎵记录音乐: \n` + iframe).then(() => {
 			bot.sendMessage({
-				friend: data.sender.id,
+				friend: plugin.settings.myQQ,
 				message: new Message().addText('🎵分享的音乐记下来了~'),
 			});
 		});
@@ -196,7 +197,7 @@ export const ideaService = async (
 	{ file, idea, newFile }: { file?: TFile; idea?: string; newFile?: TFile } = {},
 ) => {
 	if (!file) file = (await getDailyNote(plugin.settings)) as TFile;
-	if (!idea) idea = await data.waitFor.friend(data.sender.id).text();
+	if (!idea) idea = await data.waitFor.friend(plugin.settings.myQQ).text();
 
 	if (idea?.startsWith('想法')) {
 		app.vault.append(file as TFile, '\n\t' + idea.replace(/\n/gm, '\n\t')).then(() => {
@@ -236,17 +237,17 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 			// const text = bookList.map((e) => e.text).join('\n');
 			const message = new Message().addText('还没有创建过这本书哦，从下面选择一个创建吧~');
 			await bot.sendMessage({
-				friend: data.sender.id,
+				friend: plugin.settings.myQQ,
 				message: message,
 			});
 			bookList.forEach(async (b) => {
 				await bot.sendMessage({
-					friend: data.sender.id,
+					friend: plugin.settings.myQQ,
 					message: new Message().addText(b.text).addImageUrl(b.cover),
 				});
 				// message.addText(b.text).addImageUrl(b.cover);
 			});
-			const index = parseInt(await data.waitFor.friend(data.sender.id).text());
+			const index = parseInt(await data.waitFor.friend(plugin.settings.myQQ).text());
 			if (index && index >= 1 && index <= bookList.length) {
 				const infoData = await getBookInfo(bookList[index - 1].url);
 				bookFile = await createNoteFromRecord(
@@ -269,14 +270,14 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 		await app.vault.append(file as TFile, record);
 	}
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: new Message().addText('准备好做摘录了！'),
 	});
-	const quote: string = await data.waitFor.friend(data.sender.id).text();
+	const quote: string = await data.waitFor.friend(plugin.settings.myQQ).text();
 	if (quote != '取消') {
 		app.vault.append(bookFile as TFile, '\n\n> ' + quote).then(() => {
 			bot.sendMessage({
-				friend: data.sender.id,
+				friend: plugin.settings.myQQ,
 				message: new Message().addText('✏️摘录已完成~'),
 			});
 		});
@@ -306,7 +307,7 @@ export const gushiwenService = async (data: any, bot: Bot, plugin: MiraiBot) => 
 		plugin.settings.templates['templatePoemPath'],
 	);
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的${title}已记录~`),
 	});
 	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
@@ -319,8 +320,28 @@ export const voiceService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	const record = `\n- ${window.moment().format('HH:mm')} 💬记录语音:\n\t![audio](${voicePath})`;
 	await app.vault.append(file as TFile, record);
 	await bot.sendMessage({
-		friend: data.sender.id,
+		friend: plugin.settings.myQQ,
 		message: new Message().addText('语音已记录~'),
 	});
 	await ideaService(data, bot, plugin);
+};
+
+export const wodService = async (bot: Bot, plugin: MiraiBot) => {
+	const wodData = await getWod(plugin.settings);
+	await createNoteFromRecord(wodData, '🔤每日单词', plugin, plugin.settings.templates['templateWodPath']);
+	const { slkPath, cover, description } = wodData;
+	await bot.sendMessage({
+		friend: plugin.settings.myQQ,
+		message: new Message().addImageUrl(cover ?? '').addText(description ?? ''),
+	});
+	await bot.sendMessage({
+		friend: plugin.settings.myQQ,
+		message: new Message().addText('音频内容获取中...'),
+	});
+	setTimeout(() => {
+		bot.sendMessage({
+			friend: plugin.settings.myQQ,
+			message: new Message().addVoicePath(slkPath ?? ''),
+		});
+	}, 10000);
 };

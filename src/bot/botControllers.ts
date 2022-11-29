@@ -1,6 +1,6 @@
-import { Bot, Message, Middleware } from 'mirai-js';
-import { getYouzack } from 'src/scripts/youzack';
+import { Bot, Middleware } from 'mirai-js';
 import type MiraiBot from '../main';
+import { wodService } from './botServices';
 import {
 	atomReadService,
 	bilibiliService,
@@ -58,7 +58,7 @@ export function generalController(bot: Bot, plugin: MiraiBot) {
 
 const quoteController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 	// console.log(data.messageChain);
-	// const originData = await bot.getMessageById({ messageId: data.messageChain[1].id, target: data.sender.id });
+	// const originData = await bot.getMessageById({ messageId: data.messageChain[1].id, target: plugin.settings.myQQ });
 };
 
 const appController = async function (data: any, bot: Bot, plugin: MiraiBot) {
@@ -110,20 +110,7 @@ const textController = async function (data: any, bot: Bot, plugin: MiraiBot) {
 		return;
 	}
 	if ('听力' === data.text) {
-		const index = plugin.settings.youzackIndex;
-		const path = await getYouzack(plugin.settings.imageFolder, index);
-		if (index < 99) {
-			plugin.settings.youzackIndex = index + 1;
-			plugin.saveSettings();
-		}
-		setTimeout(
-			() =>
-				bot.sendMessage({
-					friend: data.sender.id,
-					message: new Message().addVoicePath(path),
-				}),
-			5000,
-		);
+		await wodService(bot, plugin);
 		return;
 	}
 	if (!data.text.startsWith('想法 ')) {

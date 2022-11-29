@@ -136,6 +136,7 @@ export interface ActivityRecord {
 	time: string;
 	category: string;
 	brief: string;
+	briefLink: string;
 	details: RecordDetail[];
 }
 export interface RecordDetail {

@@ -4,7 +4,7 @@ import type MiraiBot from '../main';
 import { generalController } from './botControllers';
 
 export class BotManager {
-	private readonly bot = new Bot();
+	readonly bot = new Bot();
 	private botOn = false;
 	private item;
 

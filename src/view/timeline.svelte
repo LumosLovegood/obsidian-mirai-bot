@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TFile } from 'obsidian';
-	import type { ActivityRecord } from 'src/type';
+	import type { ActivityRecord, MiraiBotSettings } from 'src/type';
+	import { getActivities } from 'src/utils';
 	import {
 		Timeline,
 		TimelineItem,
@@ -14,9 +15,11 @@
 	// import type MiraiBot from '../main'
 	// let plugin: MiraiBot;
 	// store.plugin.subscribe((p) => (plugin = p));
-	export let activities: ActivityRecord[];
-	const vaultName = encodeURI(app.vault.getName());
+	export let settings: MiraiBotSettings;
+	let promise = getActivities(settings);
+	console.log(promise);
 	let ctrlDown: boolean;
+
 	document.onkeydown = function(e) {
 		if (e.ctrlKey) ctrlDown = true;
 	}
@@ -25,9 +28,10 @@
 	}
 	$: popover = function(event:any){
 		const hoverEditor = app.plugins.plugins["obsidian-hover-editor"];
-		const filePath = event.target.innerText;
+		const filePath = event.target.innerText.trim();
 		console.log('🚀 ~ filePath', filePath);
 		const tfile = app.metadataCache.getFirstLinkpathDest(filePath, '');
+		console.log(tfile);
 		if (!ctrlDown) return;
 		setTimeout(() => {
 			const leaf = hoverEditor.spawnPopover(undefined, () => {
@@ -38,6 +42,7 @@
 	}
 </script>
 <Timeline position="alternate">
+	{#await promise then activities}
 	{#each activities as activity}
 		<TimelineItem>
 			<TimelineOppositeContent slot="opposite-content">
@@ -48,12 +53,12 @@
 				<TimelineConnector style="width:3px;border-radius:3px" />
 			</TimelineSeparator>
 			<TimelineContent>
-				<span class="brief">
-					{activity.category}: 《						<!-- svelte-ignore a11y-mouse-events-have-key-events -->
-					<a on:mouseover={popover} href="obsidian://advanced-uri?vault={vaultName}&filename={encodeURI(activity.brief)}&openmode=true" style="text-decoration-line: none;color:#8bc24c">
+				<div class="brief">
+					{activity.category}: 					<!-- svelte-ignore a11y-mouse-events-have-key-events -->
+					<a on:mouseover={popover} href={activity.briefLink} style="text-decoration-line: none;color:#8bc24c;">
 						{activity.brief}
-					</a>》
-				</span>
+					</a>
+				</div>
 				{#each activity.details as {type, content}}
 				{#if type === 'image'}
 					<div class='img-wrapper'>
@@ -74,13 +79,17 @@
 			</TimelineContent>
 		</TimelineItem>
 	{/each}
+	{/await}
 </Timeline>
 <style>
 	.brief {
 		font-size: 1.5rem;
 		font-weight: 500;
 		font-family: '华文新魏';
-		word-break: break-all;
+		width: 400px;
+		white-space:nowrap;
+		overflow: hidden;
+   		text-overflow: ellipsis;
 	}
 	.iframe-music {
 		margin: 10px;
@@ -106,7 +115,7 @@
 		width: 70%;
 		min-width: 100px;
 		height: 0;
-		padding-bottom: 30%;
+		padding-bottom: 40%;
 		position: relative;
 		margin: auto;
 		margin-bottom: 10px;
@@ -125,6 +134,9 @@
 		font-family: 'SentyZHAO 新蒂赵孟頫';
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: aqua;
+		color: #fff;
+		background-color: #41b6e6;
+		padding: 3px;
+		border-radius: 10px;
 	}
 </style>

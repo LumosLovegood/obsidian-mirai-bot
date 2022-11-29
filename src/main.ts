@@ -5,7 +5,8 @@ import { BotManager } from './bot/botManager';
 import { t } from './lib/lang';
 import { log, logging } from './lib/logging';
 import { BotView, VIEW_TYPE_BOT } from './view/botView';
-import { autoCreateDailyNote, createBotFolder } from './utils';
+import { createBotFolder } from './utils';
+import setTimer from './timer';
 import type { MiraiBotSettings, Parameters } from './type';
 import { protocolHandler } from './protocolHandlers';
 
@@ -19,7 +20,7 @@ export default class MiraiBot extends Plugin {
 		log('info', `loading plugin "${this.manifest.name}" v${this.manifest.version}`);
 
 		await this.loadSettings();
-
+		await createBotFolder();
 		this.registerView(VIEW_TYPE_BOT, (leaf) => new BotView(leaf, this));
 
 		this.addRibbonIcon('bot', 'Bot Timeline', () => this.activateBotView());
@@ -49,8 +50,7 @@ export default class MiraiBot extends Plugin {
 			await protocolHandler(e as unknown as Parameters, this.settings);
 		});
 
-		autoCreateDailyNote(this);
-		await createBotFolder();
+		setTimer(this);
 	}
 
 	async onunload() {
