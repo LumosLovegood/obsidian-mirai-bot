@@ -2,19 +2,18 @@ import { exec } from 'child_process';
 import { TFile, request, requestUrl } from 'obsidian';
 import got from 'got';
 import { fromBuffer } from 'file-type';
-import type { ActivityRecord, MiraiBotSettings, RecordDetail } from './type';
+import { createDailyNote, getAllDailyNotes, getDailyNote } from 'obsidian-daily-notes-interface';
+import type { MiraiBotSettings } from './type';
 import type MiraiBot from './main';
 
 const VARIABLE_REGEX = new RegExp(/{{VALUE:([^\n\r}]*)}}/);
 
-export const getDailyNote = async function ({ note }: MiraiBotSettings) {
-	let fileName = note.format;
-	if (fileName && fileName.endsWith('.md')) fileName = fileName.replace('.md', '');
-	const filePath = note.folder + '/' + window.moment().format(fileName) + '.md';
-	if (!app.vault.adapter.exists(filePath)) {
-		return await app.vault.create(filePath, '');
+export const getDailyNoteFile = async function (date: moment.Moment = window.moment()) {
+	const dailyNotes = getAllDailyNotes();
+	if (!getDailyNote(date, dailyNotes)) {
+		return createDailyNote(date);
 	}
-	return app.metadataCache.getFirstLinkpathDest(filePath, '');
+	return getDailyNote(date, dailyNotes);
 };
 
 export const getParsedHtml = async (url: string, headers: any) => {
@@ -30,11 +29,16 @@ export const getParsedHtml = async (url: string, headers: any) => {
 	return new DOMParser().parseFromString(res, 'text/html');
 };
 
-export const createNoteFromRecord = async (data: any, source: string, plugin: MiraiBot, templatePath?: string) => {
+export const createNoteFromRecord = async (
+	data: any,
+	source: string,
+	plugin: MiraiBot,
+	file: TFile,
+	templatePath?: string,
+) => {
 	const { title, link, cover, media, desc } = data;
 	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
 
-	const file = await getDailyNote(plugin.settings);
 	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
 	if (cover && cover != '') record += `\n\t![${cover}|300](${cover})`;
 	if (media && media != '') record += `\n\t![audio](${media})`;
@@ -78,9 +82,11 @@ export const uploadImageByPicgo = async (imageUrl: string) => {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ list: [imageUrl] }),
+	}).catch(() => {
+		return;
 	});
-	const data = res.json;
-	if (res.status !== 200) {
+	const data = res?.json;
+	if (res?.status !== 200) {
 		return;
 	}
 	return data.result;
@@ -132,67 +138,4 @@ export async function createBotFolder() {
 	const botTempFolder = botFolder + '/temp';
 	if (!(await app.vault.adapter.exists(botFolder))) await app.vault.createFolder(botFolder);
 	if (!(await app.vault.adapter.exists(botTempFolder))) await app.vault.createFolder(botTempFolder);
-}
-
-export async function getActivities(settings: MiraiBotSettings) {
-	const vaultName = encodeURI(app.vault.getName());
-	const file = await getDailyNote(settings);
-	const records = (await app.vault.read(file as TFile)).replace(
-		new RegExp(`.*${settings.timelineIdentifier}`, 's'),
-		'',
-	);
-	let activities: ActivityRecord[] = [];
-	const recordReg =
-		/(?:\n|^)- (\d\d:\d\d) (.+?): ?(?: \[{1,2}(.+?)\]{1,2}(?:\((.+?)\))?)?\n\t?((?:.|\n)*?)(?=(?:\n- |$))/g;
-	activities = [...records.matchAll(recordReg)].map((item) => {
-		const time = item[1] ?? '';
-		const category = item[2] ?? '';
-		const brief = item[3] ?? '';
-		const briefLink = item[4]
-			? `obsidian://web-open?url=${encodeURIComponent(item[4])}`
-			: `obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(brief)}&openmode=true`;
-		let details: RecordDetail[] = item[5]?.split('\n').map((line) => {
-			line = line.trim();
-			let match;
-			if (line.match(/!\[.*?audio.*?\]\((.*)\)/)) {
-				match = line.match(/!\[.*?audio.*?\]\((.*)\)/);
-				const content = match ? getRealFilePath(match[1]) : '';
-				return { type: 'audio', content };
-			}
-			if (line.match(/!\[.*\]\((.*)\)/)) {
-				match = line.match(/!\[.*\]\((.*)\)/);
-				const content = match ? getRealFilePath(match[1]) : '';
-				return { type: 'image', content };
-			}
-			if (line.match(/(?<=<iframe src=').*?(?=')/)) {
-				match = line.match(/(?<=<iframe src=').*?(?=')/);
-				return { type: 'iframe', content: match ? match[0] : '' };
-			}
-			const content = line
-				.replace(/\[\[(.*)\]\]/g, function (...args) {
-					const fileName = args[1];
-					return `<a href="obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(fileName)}&openmode=true" style="text-decoration-line: none;>${fileName}</a>`;
-				})
-				.replace(/(?<!!)\[(.*)\]\((.*)\)/g, function (...args) {
-					const title = args[1];
-					const url = args[2];
-					return `<a href="obsidian://web-open?url=${encodeURIComponent(
-						url,
-					)}" style="text-decoration-line: none;">${title}</a>`;
-				})
-				.replace(/https?:.*?(?=\s|$)/g, (r) => {
-					return `<a href="obsidian://web-open?url=${encodeURIComponent(r)}">${r}</a>`;
-				});
-			return { type: 'text', content };
-		});
-		details.forEach((value, index, array) => {
-			if (index > 0 && value.type === 'text' && array[index - 1].type === 'text') {
-				value.content = array[index - 1].content + '<br/>' + value.content;
-				array[index - 1].content = '';
-			}
-		});
-		details = details.filter((d) => d.content != '');
-		return { time, category, brief, details, briefLink };
-	});
-	return activities;
 }

@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type MiraiBot from 'src/main';
 import store from 'src/store';
-import Component from './timeline.svelte';
+import Component from './svelte/BotActivityView.svelte';
 export const VIEW_TYPE_BOT = 'bot-view';
 export class BotView extends ItemView {
 	component: Component;
@@ -28,6 +28,7 @@ export class BotView extends ItemView {
 			target: this.contentEl,
 			props: {
 				settings: this.plugin.settings,
+				plugin: this.plugin,
 			},
 		});
 	}

@@ -69,7 +69,7 @@ export default class MiraiBot extends Plugin {
 
 	async activateBotView() {
 		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOT);
-		await this.app.workspace.getLeaf(false).setViewState({
+		await this.app.workspace.getLeaf(true).setViewState({
 			type: VIEW_TYPE_BOT,
 			active: true,
 		});

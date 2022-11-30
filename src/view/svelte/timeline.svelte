@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TFile } from 'obsidian';
-	import type { ActivityRecord, MiraiBotSettings } from 'src/type';
-	import { getActivities } from 'src/utils';
+	import type { ActivityRecord } from 'src/type';
+
 	import {
 		Timeline,
 		TimelineItem,
@@ -15,11 +15,9 @@
 	// import type MiraiBot from '../main'
 	// let plugin: MiraiBot;
 	// store.plugin.subscribe((p) => (plugin = p));
-	export let settings: MiraiBotSettings;
-	let promise = getActivities(settings);
-	console.log(promise);
-	let ctrlDown: boolean;
+	export let activities: ActivityRecord[];
 
+	let ctrlDown: boolean;
 	document.onkeydown = function(e) {
 		if (e.ctrlKey) ctrlDown = true;
 	}
@@ -41,8 +39,8 @@
 		},500)
 	}
 </script>
+
 <Timeline position="alternate">
-	{#await promise then activities}
 	{#each activities as activity}
 		<TimelineItem>
 			<TimelineOppositeContent slot="opposite-content">
@@ -67,7 +65,9 @@
 						</a>
 					</div>
 				{:else if type === 'audio'}
-					<audio controls src={content} style="margin:10px"></audio>
+					<div class="iframe-music">
+						<audio controls src={content} class="height:100%"></audio>
+					</div>
 				{:else if type === 'iframe'}
 					<br /><iframe src={content} title="Music Share" height="100" class="iframe-music" />
 				{:else}
@@ -79,7 +79,6 @@
 			</TimelineContent>
 		</TimelineItem>
 	{/each}
-	{/await}
 </Timeline>
 <style>
 	.brief {
@@ -92,7 +91,9 @@
    		text-overflow: ellipsis;
 	}
 	.iframe-music {
-		margin: 10px;
+		margin: auto;
+		margin-bottom: 10px;
+		margin-top: 10px;
 		border-radius: 15px;
 		box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.46), 0 2px 12px 0 rgba(0, 0, 0, 0.12),
 			0 4px 5px -3px rgba(0, 0, 0, 0.2);
@@ -103,13 +104,15 @@
 			0 4px 5px -3px rgba(0, 0, 0, 0.2);
 		padding: 5px 10px 5px 10px;
 		font-size: 1.2rem;
-		max-width: 400px;
+		width: 70%;
 		background-color: #fff1ac;
 		color: #000;
 		user-select: text;
 		text-align: start;
 		word-break: break-all;
 		margin: auto;
+		margin-bottom: 10px;
+		margin-top: 10px;
 	}
 	.img-wrapper {
 		width: 70%;

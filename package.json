@@ -43,8 +43,10 @@
 		"got": "^11.8.2",
 		"mirai-js": "^2.8.7",
 		"node-fetch": "^2.6.1",
+		"obsidian-daily-notes-interface": "^0.9.4",
 		"obsidian-dataview": "^0.5.51",
 		"obsidian-svelte": "^0.0.37",
+		"svelte-heatmap": "^1.0.2",
 		"svelte-vertical-timeline": "^0.0.2",
 		"turndown": "^7.1.1",
 		"wordcloud": "^1.2.2"

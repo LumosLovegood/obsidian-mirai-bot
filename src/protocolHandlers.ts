@@ -1,6 +1,6 @@
 import type { TFile } from 'obsidian';
 import type { Parameters } from './type';
-import { getDailyNote } from './utils';
+import { getDailyNoteFile } from './utils';
 import type { MiraiBotSettings } from './type';
 
 export const handlePlain = (source: string, content: string, title: string) => {
@@ -38,7 +38,7 @@ export const protocolHandler = async (parameters: Parameters, settings: MiraiBot
 	if (type === 'image') {
 		record = await handleImage(source, content, title, settings);
 	}
-	const file = await getDailyNote(settings);
+	const file = await getDailyNoteFile();
 	if (!record) return;
 	app.vault.append(file as TFile, record);
 };

@@ -3,14 +3,14 @@ import type { TFile } from 'obsidian';
 import { getAtomRead } from 'src/scripts/atomRead';
 import { getBiliInfo } from 'src/scripts/bilibili';
 import { getBookInfo, searchDouban } from 'src/scripts/doubanBook';
-import { getDailyNote, imgHandler, saveVoice } from 'src/utils';
+import { imgHandler, saveVoice } from 'src/utils';
 import { getWxoa } from 'src/scripts/wxoa';
 import { getZhihu } from 'src/scripts/zhihu';
 import { getWod } from 'src/scripts/wod';
 import type MiraiBot from '../main';
 import { createNoteFromRecord } from '../utils';
 
-export const noteService = async (data: any, bot: Bot, plugin: MiraiBot) => {
+export const noteService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const {
 		waitFor,
 		sender: { id },
@@ -18,7 +18,6 @@ export const noteService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	const vault = app.vault;
 	await bot.sendMessage({ friend: id, message: new Message().addText('有在认真听~') });
 	const nowTitle = '\n- ' + window.moment().format('HH:mm') + ' ✏️随笔: ';
-	const file = await getDailyNote(plugin.settings);
 	const message = new Message().addText('记录完成~');
 	let next = await waitFor.messageChain();
 	let note = next[1];
@@ -31,11 +30,11 @@ export const noteService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 			isFirst = false;
 		}
 		if (note.type === 'Plain') {
-			const plain = '\n\t' + note.text;
-			message.addText(plain);
+			const plain = '\n\t' + note.text.replace(/\n/g, '\n\t');
+			message.addText(note.text);
 			vault.append(file as TFile, plain);
 		} else if (note.type === 'Image') {
-			await picService(data, bot, plugin, false, next);
+			await picService(data, bot, plugin, file, false, next);
 			message.addImageUrl(note.url ?? '');
 		}
 		next = await waitFor.messageChain();
@@ -44,7 +43,14 @@ export const noteService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 	await bot.sendMessage({ friend: id, message: message });
 };
 
-export const picService = async (data: any, bot: Bot, plugin: MiraiBot, isRercord: boolean, messageChain?: any) => {
+export const picService = async (
+	data: any,
+	bot: Bot,
+	plugin: MiraiBot,
+	file: TFile,
+	isRercord: boolean,
+	messageChain?: any,
+) => {
 	let message;
 	let messageId: number;
 	if (!messageChain) {
@@ -55,7 +61,6 @@ export const picService = async (data: any, bot: Bot, plugin: MiraiBot, isRercor
 		messageId = messageChain[0].id;
 	}
 	const vault = app.vault;
-	const file = await getDailyNote(plugin.settings);
 	const imageUrl = await imgHandler(message.url, plugin.settings);
 	let record = `\n\t![${imageUrl}|300](${imageUrl})`;
 	if (isRercord) {
@@ -78,11 +83,11 @@ export const picService = async (data: any, bot: Bot, plugin: MiraiBot, isRercor
 			});
 		});
 	if (isRercord) {
-		await ideaService(data, bot, plugin);
+		await ideaService(data, bot, plugin, file);
 	}
 };
 
-export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url: string) => {
+export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile, url: string) => {
 	const senderId = plugin.settings.myQQ;
 	const infoData = await getBiliInfo(url);
 	const { cover, author } = infoData;
@@ -92,6 +97,7 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url
 		infoData,
 		'📺B站视频',
 		plugin,
+		file,
 		plugin.settings.templates['templateBiliPath'],
 	);
 
@@ -99,53 +105,52 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, url
 		friend: senderId,
 		message: new Message().addText(`📺“${author}”的B站视频已记录√`).addImageUrl(cover),
 	});
-	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
+	await ideaService(data, bot, plugin, file, { newFile: newFile as TFile });
 };
 
-export const zhihuService = async (data: any, bot: Bot, plugin: MiraiBot, url: string) => {
+export const zhihuService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile, url: string) => {
 	const infoData = await getZhihu(url);
 	const { author, cover } = infoData;
-	if (!author) return await textService(url, bot, plugin);
-	const newFile = await createNoteFromRecord(infoData, '🔎知乎问答', plugin);
+	if (!author) return await textService(url, bot, plugin, file);
+	const newFile = await createNoteFromRecord(infoData, '🔎知乎问答', plugin, file);
 	let message = new Message().addText(`“${author}”的知乎回答已记录~`);
 	message = cover && cover != '' ? message.addImageUrl(cover) : message;
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: message,
 	});
-	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
+	await ideaService(data, bot, plugin, file, { newFile: newFile as TFile });
 };
 
-export const wxoaService = async (data: any, bot: Bot, plugin: MiraiBot, url: string) => {
+export const wxoaService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile, url: string) => {
 	const infoData = await getWxoa(url);
 	const { author, cover } = infoData;
 	if (!author) return;
-	const newFile = await createNoteFromRecord(infoData, '📄微信文章', plugin);
+	const newFile = await createNoteFromRecord(infoData, '📄微信文章', plugin, file);
 
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的微信文章已记录~`).addImageUrl(cover),
 	});
-	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
+	await ideaService(data, bot, plugin, file, { newFile: newFile as TFile });
 };
 
-export const atomReadService = async (data: any, bot: Bot, plugin: MiraiBot) => {
+export const atomReadService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const url = data.text.replace(/.*\n(?=http)/g, '');
 	const infoData = await getAtomRead(url);
 	const { author, cover } = infoData;
 	if (!author) return;
-	const newFile = await createNoteFromRecord(infoData, '📄原子阅读', plugin);
+	const newFile = await createNoteFromRecord(infoData, '📄原子阅读', plugin, file);
 
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的原子阅读文章已记录~`).addImageUrl(cover ?? ''),
 	});
-	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
+	await ideaService(data, bot, plugin, file, { newFile: newFile as TFile });
 };
-export const locationService = async (data: any, bot: Bot, plugin: MiraiBot, appInfo: any) => {
+export const locationService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile, appInfo: any) => {
 	const meta = appInfo['meta']['Location.Search'];
 	const { address, name, lat, lng } = meta;
-	const file = await getDailyNote(plugin.settings);
 	const note = `\n- ${window.moment().format('HH:mm')} 🚩位置记录: [${address},${name}](geo:${lat},${lng})`;
 	app.vault
 		.append(file as TFile, note)
@@ -161,10 +166,10 @@ export const locationService = async (data: any, bot: Bot, plugin: MiraiBot, app
 				message: new Message().addText('位置无法记录'),
 			});
 		});
-	await ideaService(data, bot, plugin);
+	await ideaService(data, bot, plugin, file);
 };
 
-export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
+export const musicService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const { musicUrl, kind } = data.messageChain[1];
 	let server: 'tencent' | 'netease';
 	const id = musicUrl.match(/(?<=[\W|songm]id=)\w+/g)[0];
@@ -178,7 +183,6 @@ export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 		return;
 	}
 	if (id) {
-		const file = await getDailyNote(plugin.settings);
 		const iframe = `<center><iframe src='https://notion.busiyi.world/music-player/?server=${server}&type=song&id=${id}&dark'  height=100 width='80%'></iframe></center>`;
 		app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} 🎵记录音乐: \n` + iframe).then(() => {
 			bot.sendMessage({
@@ -186,7 +190,7 @@ export const musicService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 				message: new Message().addText('🎵分享的音乐记下来了~'),
 			});
 		});
-		await ideaService(data, bot, plugin);
+		await ideaService(data, bot, plugin, file);
 	}
 };
 
@@ -194,9 +198,9 @@ export const ideaService = async (
 	data: any,
 	bot: Bot,
 	plugin: MiraiBot,
-	{ file, idea, newFile }: { file?: TFile; idea?: string; newFile?: TFile } = {},
+	file: TFile,
+	{ idea, newFile }: { idea?: string; newFile?: TFile } = {},
 ) => {
-	if (!file) file = (await getDailyNote(plugin.settings)) as TFile;
 	if (!idea) idea = await data.waitFor.friend(plugin.settings.myQQ).text();
 
 	if (idea?.startsWith('想法')) {
@@ -214,8 +218,7 @@ export const ideaService = async (
 	}
 };
 
-export const textService = async (text: string, bot: Bot, plugin: MiraiBot, title = '📒记录文本') => {
-	const file = await getDailyNote(plugin.settings);
+export const textService = async (text: string, bot: Bot, plugin: MiraiBot, file: TFile, title = '📒记录文本') => {
 	app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} ${title}: \n\t` + text?.trim()).then(() => {
 		bot.sendMessage({
 			friend: plugin.settings.myQQ,
@@ -224,8 +227,7 @@ export const textService = async (text: string, bot: Bot, plugin: MiraiBot, titl
 	});
 };
 
-export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
-	const file = await getDailyNote(plugin.settings);
+export const bookService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const book = data.text.replace('摘录 ', '');
 	const bookFileName = book?.replace(/[\\/:*?"<>|\n]/g, '_');
 	const bookFilePath = plugin.settings.tempFolder + '/' + bookFileName + '.md';
@@ -254,6 +256,7 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 					infoData,
 					'📖读书',
 					plugin,
+					file,
 					plugin.settings.templates['templateBookPath'],
 				);
 			} else {
@@ -281,13 +284,13 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot) => {
 				message: new Message().addText('✏️摘录已完成~'),
 			});
 		});
-		await ideaService(data, bot, plugin, { file: bookFile as TFile }).then((idea) => {
+		await ideaService(data, bot, plugin, bookFile as TFile).then((idea) => {
 			if (idea) app.vault.append(file as TFile, '\n' + idea);
 		});
 	}
 };
 
-export const gushiwenService = async (data: any, bot: Bot, plugin: MiraiBot) => {
+export const gushiwenService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	let info: string = data.text.replace(/http.*$/g, '');
 	const titleMatch = info.match(/(?<=《).{1,15}(?=》$)/g);
 	const title = titleMatch ? titleMatch[titleMatch.length - 1] : '';
@@ -304,31 +307,31 @@ export const gushiwenService = async (data: any, bot: Bot, plugin: MiraiBot) => 
 		{ title, author, dynasty, content, date },
 		'📜古诗文',
 		plugin,
+		file,
 		plugin.settings.templates['templatePoemPath'],
 	);
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: new Message().addText(`“${author}”的${title}已记录~`),
 	});
-	await ideaService(data, bot, plugin, { newFile: newFile as TFile });
+	await ideaService(data, bot, plugin, file, { newFile: newFile as TFile });
 };
 
-export const voiceService = async (data: any, bot: Bot, plugin: MiraiBot) => {
+export const voiceService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const url = data.messageChain[1].url;
 	const voicePath = await saveVoice(url, plugin.settings);
-	const file = await getDailyNote(plugin.settings);
 	const record = `\n- ${window.moment().format('HH:mm')} 💬记录语音:\n\t![audio](${voicePath})`;
 	await app.vault.append(file as TFile, record);
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: new Message().addText('语音已记录~'),
 	});
-	await ideaService(data, bot, plugin);
+	await ideaService(data, bot, plugin, file);
 };
 
-export const wodService = async (bot: Bot, plugin: MiraiBot) => {
+export const wodService = async (bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const wodData = await getWod(plugin.settings);
-	await createNoteFromRecord(wodData, '🔤每日单词', plugin, plugin.settings.templates['templateWodPath']);
+	await createNoteFromRecord(wodData, '🔤每日单词', plugin, file, plugin.settings.templates['templateWodPath']);
 	const { slkPath, cover, description } = wodData;
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
