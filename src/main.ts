@@ -6,9 +6,10 @@ import { t } from './lib/lang';
 import { log, logging } from './lib/logging';
 import { BotView, VIEW_TYPE_BOT } from './view/botView';
 import { createBotFolder } from './utils';
-import setTimer from './timer';
+import registerTimers from './timers';
 import type { MiraiBotSettings, Parameters } from './type';
 import { protocolHandler } from './protocolHandlers';
+import registerEvents from './events';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
@@ -49,8 +50,8 @@ export default class MiraiBot extends Plugin {
 		this.registerObsidianProtocolHandler('mirai-bot', async (e) => {
 			await protocolHandler(e as unknown as Parameters, this.settings);
 		});
-
-		setTimer(this);
+		registerEvents(this);
+		registerTimers(this);
 	}
 
 	async onunload() {

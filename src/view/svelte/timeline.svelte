@@ -85,10 +85,9 @@
 		font-size: 1.5rem;
 		font-weight: 500;
 		font-family: '华文新魏';
-		width: 400px;
-		white-space:nowrap;
+		word-wrap: break-word;
+		word-break: break-all;
 		overflow: hidden;
-   		text-overflow: ellipsis;
 	}
 	.iframe-music {
 		margin: auto;

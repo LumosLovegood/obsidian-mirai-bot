@@ -36,6 +36,7 @@ export const createNoteFromRecord = async (
 	file: TFile,
 	templatePath?: string,
 ) => {
+	plugin.botManager.creating = true;
 	const { title, link, cover, media, desc } = data;
 	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
 
@@ -46,7 +47,7 @@ export const createNoteFromRecord = async (
 	await app.vault.append(file as TFile, record + `\n\tFrom ${link}`);
 
 	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
-	const newFile = app.vault.getAbstractFileByPath(newFilePath);
+	let newFile = app.vault.getAbstractFileByPath(newFilePath);
 	if (newFile) return newFile;
 
 	templatePath = templatePath ? templatePath + '.md' : plugin.settings.templates['templateNotePath'] + '.md';
@@ -59,7 +60,9 @@ export const createNoteFromRecord = async (
 			return valueMatch ? data[valueMatch[1]] : '';
 		});
 	}
-	return await app.vault.create(newFilePath, template);
+	newFile = await app.vault.create(newFilePath, template);
+	plugin.botManager.creating = false;
+	return newFile;
 };
 
 export const getRealFilePath = (path: string) => {

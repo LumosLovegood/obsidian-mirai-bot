@@ -5,6 +5,7 @@ import { generalController } from './botControllers';
 
 export class BotManager {
 	readonly bot = new Bot();
+	creating: boolean;
 	private botOn = false;
 	private item;
 

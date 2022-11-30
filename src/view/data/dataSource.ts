@@ -73,6 +73,5 @@ export function getHeatmapData() {
 		const value = file.stat.size;
 		return { date, value };
 	});
-	console.log(data);
 	return data;
 }

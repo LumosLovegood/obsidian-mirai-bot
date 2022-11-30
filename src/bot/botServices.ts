@@ -92,7 +92,6 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, fil
 	const infoData = await getBiliInfo(url);
 	const { cover, author } = infoData;
 	if (!cover) return;
-
 	const newFile = await createNoteFromRecord(
 		infoData,
 		'📺B站视频',
@@ -100,7 +99,6 @@ export const bilibiliService = async (data: any, bot: Bot, plugin: MiraiBot, fil
 		file,
 		plugin.settings.templates['templateBiliPath'],
 	);
-
 	await bot.sendMessage({
 		friend: senderId,
 		message: new Message().addText(`📺“${author}”的B站视频已记录√`).addImageUrl(cover),

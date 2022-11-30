@@ -3,7 +3,7 @@ import { wodService } from './bot/botServices';
 import type MiraiBot from './main';
 import { getDailyNoteFile } from './utils';
 
-export default function setTimer(plugin: MiraiBot) {
+export default function registerTimers(plugin: MiraiBot) {
 	autoCreateDailyNote('00:00', plugin);
 	pushWodMessage('08:00', plugin);
 }
