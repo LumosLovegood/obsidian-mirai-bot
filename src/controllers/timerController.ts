@@ -1,7 +1,7 @@
 import { Message } from 'mirai-js';
-import { wodService } from './bot/botServices';
-import type MiraiBot from './main';
-import { getDailyNoteFile } from './utils';
+import type MiraiBot from '../main';
+import { getDailyNoteFile } from '../utils';
+import { wodService } from '../services/messageServices';
 
 export default function registerTimers(plugin: MiraiBot) {
 	autoCreateDailyNote('00:00', plugin);

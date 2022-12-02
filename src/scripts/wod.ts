@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import type { MiraiBotSettings } from 'src/type';
-import { getParsedHtml } from 'src/utils';
+import { getParsedHtml, streamToString } from 'src/utils';
 
 const headers = {
 	accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -43,7 +43,9 @@ export async function getWod({ imageFolder }: MiraiBotSettings) {
 	const pyPath = botFolder + '/any2slk.py';
 	const cmdStr = `pwsh.exe -c python ${pyPath} ${mp3Path} ${pcmPath} ${slkPath} '${mediaUrl.replace(/&/g, '^&')}'`;
 	console.log('🚀 ~ cmdStr', cmdStr);
-	exec(cmdStr);
+	const { stdout } = await exec(cmdStr);
+	let voicePath = await streamToString(stdout);
+	if (voicePath != slkPath) voicePath = slkPath;
 	const date = window.moment().format('YYYY-MM-DD');
 	return {
 		mediaUrl,
@@ -53,7 +55,7 @@ export async function getWod({ imageFolder }: MiraiBotSettings) {
 		cover,
 		description,
 		title,
-		slkPath,
+		voicePath,
 		media: imageFolder + '/' + title + '.mp3',
 		date,
 	};

@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
-import { TFile, request, requestUrl } from 'obsidian';
+import type { Readable } from 'stream';
+import { TFile, request } from 'obsidian';
 import got from 'got';
 import { fromBuffer } from 'file-type';
 import { createDailyNote, getAllDailyNotes, getDailyNote } from 'obsidian-daily-notes-interface';
@@ -37,14 +38,16 @@ export const createNoteFromRecord = async (
 	templatePath?: string,
 ) => {
 	plugin.botManager.creating = true;
-	const { title, link, cover, media, desc } = data;
+	const { title, link, cover, media, desc, content } = data;
 	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
 
 	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
 	if (cover && cover != '') record += `\n\t![${cover}|300](${cover})`;
 	if (media && media != '') record += `\n\t![audio](${media})`;
-	if (desc && media != '') record += `\n\t${desc}`;
-	await app.vault.append(file as TFile, record + `\n\tFrom ${link}`);
+	if (desc && desc != '') record += `\n\t${desc}`;
+	if (content && content != '') record += `\n\t${content.slice(0, 10) + '...'}`;
+	if (link && link != '') record += `\n\tFrom ${link}`;
+	await app.vault.append(file as TFile, record);
 
 	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
 	let newFile = app.vault.getAbstractFileByPath(newFilePath);
@@ -79,20 +82,36 @@ export const imgHandler = async (imageUrl: string | undefined, settings: MiraiBo
 	if (!settings.enableImageUpload) return await saveImage(imageUrl, settings);
 	return (await uploadImageByPicgo(imageUrl)) ?? (await saveImage(imageUrl, settings));
 };
-export const uploadImageByPicgo = async (imageUrl: string) => {
-	const res = await requestUrl({
-		url: 'http://127.0.0.1:36677/upload',
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ list: [imageUrl] }),
-	}).catch(() => {
-		return;
-	});
-	const data = res?.json;
-	if (res?.status !== 200) {
-		return;
+
+export async function streamToString(stream: Readable | null) {
+	if (!stream) return '';
+	const chunks = [];
+	// eslint-disable-next-line no-loops/no-loops
+	for await (const chunk of stream) {
+		chunks.push(Buffer.from(chunk));
 	}
-	return data.result;
+	return Buffer.concat(chunks).toString('utf-8');
+}
+
+export const uploadImageByPicgo = async (imageUrl: string) => {
+	// const res = await requestUrl({
+	// 	url: 'http://127.0.0.1:36677/upload',
+	// 	method: 'POST',
+	// 	headers: { 'Content-Type': 'application/json' },
+	// 	body: JSON.stringify({ list: [imageUrl] }),
+	// }).catch(() => {
+	// 	return;
+	// });
+	// const data = res?.json;
+	// if (res?.status !== 200) {
+	// 	return;
+	// }
+	// return data.result;
+	const cmdStr = `picgo u ${imageUrl.replace(/&/g, '^&')}`;
+	const { stdout } = await exec(cmdStr);
+	const message = await streamToString(stdout);
+	const dataList = message.split('\n').filter((d) => d != '');
+	return dataList[dataList.length - 1];
 };
 // Code from obsidian-local-image https://github.com/aleksey-rezvov/obsidian-local-images/blob/master/src/utils.ts
 export async function downloadBufferItem(url: string): Promise<ArrayBuffer> {

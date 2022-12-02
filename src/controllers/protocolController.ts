@@ -1,7 +1,7 @@
 import type { TFile } from 'obsidian';
-import type { Parameters } from './type';
-import { getDailyNoteFile } from './utils';
-import type { MiraiBotSettings } from './type';
+import type { Parameters } from '../type';
+import { getDailyNoteFile } from '../utils';
+import type { MiraiBotSettings } from '../type';
 
 export const handlePlain = (source: string, content: string, title: string) => {
 	const titleSplit = title.split(' - ');

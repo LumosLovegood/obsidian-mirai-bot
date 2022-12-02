@@ -2,7 +2,7 @@ import { Bot, Middleware } from 'mirai-js';
 import { getDailyNoteFile } from 'src/utils';
 import type { TFile } from 'obsidian';
 import type MiraiBot from '../main';
-import { wodService } from './botServices';
+import { wodService } from '../services/messageServices';
 import {
 	atomReadService,
 	bilibiliService,
@@ -16,7 +16,7 @@ import {
 	voiceService,
 	wxoaService,
 	zhihuService,
-} from './botServices';
+} from '../services/messageServices';
 
 export function generalController(bot: Bot, plugin: MiraiBot) {
 	return new Middleware()

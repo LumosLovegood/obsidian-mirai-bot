@@ -12,7 +12,7 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 	);
 	let activities: ActivityRecord[] = [];
 	const recordReg =
-		/(?:\n|^)- (\d\d:\d\d) (.+?): ?(?: \[{1,2}(.+?)\]{1,2}(?:\((.+?)\))?)?\n\t?((?:.|\n)*?)(?=(?:\n- |$))/g;
+		/(?:\n|^)- (\d\d:\d\d) (.+?): ?(?: \[{1,2}(.+?)\]{1,2}(?:\((.+?)\))?)?\n\t?((?:.|\n)*?)?(?=(?:\n- |$))/g;
 	activities = [...records.matchAll(recordReg)].map((item) => {
 		const time = item[1] ?? '';
 		const category = item[2] ?? '';
@@ -40,7 +40,7 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 			const content = line
 				.replace(/\[\[(.*)\]\]/g, function (...args) {
 					const fileName = args[1];
-					return `<a href="obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(fileName)}&openmode=true" style="text-decoration-line: none;>${fileName}</a>`;
+					return `<a href="obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(fileName)}&openmode=true" style="text-decoration-line: none;">${fileName}</a>`;
 				})
 				.replace(/(?<!!)\[(.*)\]\((.*)\)/g, function (...args) {
 					const title = args[1];
@@ -61,6 +61,7 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 			}
 		});
 		details = details.filter((d) => d.content != '');
+		console.log('🚀 ~ details', details);
 		return { time, category, brief, details, briefLink };
 	});
 	return activities;

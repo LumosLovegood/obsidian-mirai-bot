@@ -9,6 +9,7 @@ import { getZhihu } from 'src/scripts/zhihu';
 import { getWod } from 'src/scripts/wod';
 import type MiraiBot from '../main';
 import { createNoteFromRecord } from '../utils';
+import type { BotManager } from '../botManager';
 
 export const noteService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
 	const {
@@ -328,21 +329,35 @@ export const voiceService = async (data: any, bot: Bot, plugin: MiraiBot, file: 
 };
 
 export const wodService = async (bot: Bot, plugin: MiraiBot, file: TFile) => {
+	await bot.sendMessage({
+		friend: plugin.settings.myQQ,
+		message: new Message().addText('每日一词获取中~'),
+	});
 	const wodData = await getWod(plugin.settings);
 	await createNoteFromRecord(wodData, '🔤每日单词', plugin, file, plugin.settings.templates['templateWodPath']);
-	const { slkPath, cover, description } = wodData;
+	const { voicePath, cover, description } = wodData;
 	await bot.sendMessage({
 		friend: plugin.settings.myQQ,
 		message: new Message().addImageUrl(cover ?? '').addText(description ?? ''),
 	});
-	await bot.sendMessage({
+	console.log('voicePath', voicePath);
+	bot.sendMessage({
 		friend: plugin.settings.myQQ,
-		message: new Message().addText('音频内容获取中...'),
+		message: new Message().addVoicePath(voicePath?.replace(/\\/g, '/') ?? ''),
 	});
-	setTimeout(() => {
-		bot.sendMessage({
-			friend: plugin.settings.myQQ,
-			message: new Message().addVoicePath(slkPath ?? ''),
-		});
-	}, 10000);
+};
+
+export const sendToMe = async (content: string, botManager: BotManager) => {
+	const imgReg = /!\[.*?\]\((.*?)\)/gm;
+	console.log(content);
+	content = content.replace(imgReg, (...args) => {
+		botManager.sendMessage(new Message().addImageUrl(args[1]));
+		return '';
+	});
+	content = content
+		.replace(/\[\[(.*?)\]\]/, (...args) => {
+			return args[1];
+		})
+		.trim();
+	if (content != '') botManager.sendMessage(new Message().addText(content));
 };

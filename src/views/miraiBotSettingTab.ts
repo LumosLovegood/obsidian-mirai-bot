@@ -1,9 +1,9 @@
 import { Notice, PluginSettingTab, Setting } from 'obsidian';
 import type { MiraiBotSettings } from 'src/type';
 import type MiraiBot from '../main';
-import { t } from '../lib/lang';
+import { t } from '../libs/lang';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { LogOptions, log } from '../lib/logging';
+import type { LogOptions, log } from '../libs/logging';
 
 export const DEFAULT_SETTINGS: MiraiBotSettings = {
 	botConfig: {

@@ -1,7 +1,7 @@
-import { Bot } from 'mirai-js';
+import { Bot, Message } from 'mirai-js';
 import { Notice } from 'obsidian';
-import type MiraiBot from '../main';
-import { generalController } from './botControllers';
+import type MiraiBot from './main';
+import { generalController } from './controllers/messageController';
 
 export class BotManager {
 	readonly bot = new Bot();
@@ -54,6 +54,13 @@ export class BotManager {
 			console.error(err);
 			new Notice('The bot is diaconnected.');
 			await this.stop();
+		});
+	}
+
+	sendMessage(message: Message) {
+		this.bot.sendMessage({
+			friend: this.plugin.settings.myQQ,
+			message: message,
 		});
 	}
 }

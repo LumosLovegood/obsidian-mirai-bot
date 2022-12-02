@@ -1,5 +1,4 @@
-import type { Bot } from 'mirai-js';
-import type { LogOptions } from './lib/logging';
+import type { LogOptions } from './libs/logging';
 
 declare module 'obsidian' {
 	interface App {
@@ -25,6 +24,7 @@ declare module 'obsidian' {
 			};
 		};
 		plugins: {
+			enablePlugin(arg0: string): any;
 			plugins: {
 				[key: string]: { manifest: PluginManifest };
 				'obsidian-hover-editor': {
@@ -99,33 +99,7 @@ export interface MiraiBotSettings {
 	imageFolder: string;
 	youzackIndex: number;
 }
-export interface Message {
-	type: 'Plain' | 'Image' | 'Source' | 'App' | 'MusicShare' | 'Quote';
-	id?: number;
-	text?: string;
-	content?: string;
-}
-export interface BotData {
-	bot: Bot;
-	messageChain: Message[];
-	sender: {
-		id: number;
-	};
-	text: string;
-	type: any;
-	unlock: () => any;
-	waitFor: {
-		friend: (qq: number) => any;
-		text: () => any;
-		messageChain: () => Message[];
-	};
-	eventId: any;
-	groupId: any;
-	fromId: any;
-	groupName: any;
-	nick: any;
-	message: any;
-}
+
 export interface Parameters {
 	type: 'image' | 'plain';
 	content: string;

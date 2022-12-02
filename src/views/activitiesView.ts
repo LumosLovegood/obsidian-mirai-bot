@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type MiraiBot from 'src/main';
-import store from 'src/store';
-import Component from './svelte/BotActivityView.svelte';
+import store from 'src/views/stores/store';
+import Component from './components/BotActivityView.svelte';
 export const VIEW_TYPE_BOT = 'bot-view';
 export class BotView extends ItemView {
 	component: Component;
