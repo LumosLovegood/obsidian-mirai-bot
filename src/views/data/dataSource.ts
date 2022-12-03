@@ -51,6 +51,10 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 				})
 				.replace(/https?:.*?(?=\s|$)/g, (r) => {
 					return `<a href="obsidian://web-open?url=${encodeURIComponent(r)}">${r}</a>`;
+				})
+				.replace(/- \[(.)\] (.*)/, function (...args) {
+					console.log(args[1]);
+					return `<input type="checkbox" ${args[1] === 'x' ? 'checked' : ''} disabled> ${args[2]}`;
 				});
 			return { type: 'text', content };
 		});

@@ -6,12 +6,10 @@ import { t } from './libs/lang';
 import { log, logging } from './libs/logging';
 import { BotView, VIEW_TYPE_BOT } from './views/activitiesView';
 import { createBotFolder } from './utils';
-import registerTimers from './controllers/timerController';
 import type { MiraiBotSettings, Parameters } from './type';
 import { protocolHandler } from './controllers/protocolController';
-import { sendToMe } from './services/messageServices';
-import { BotPanel, VIEW_TYPE_BOT_PANEL } from './views/uploadPanel';
-import registerEvents from './controllers/eventController';
+import { BotPanel, VIEW_TYPE_BOT_PANEL } from './views/senderPanel';
+import { sendToMe } from './services/sentToMe';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
@@ -48,27 +46,12 @@ export default class MiraiBot extends Plugin {
 			callback: () => this.activateBotView(),
 		});
 
-		this.registerEvent(
-			this.app.workspace.on('editor-menu', (menu, editor, view) => {
-				let selection = editor.getSelection();
-				const cursorLocation = editor.getCursor();
-				if (!selection || selection === '') selection = editor.getLine(cursorLocation.line);
-				console.log('🚀 ~ selection', selection);
-				menu.addItem((item) => {
-					item.setTitle('通过Bot发送').onClick(async () => await sendToMe(selection, this.botManager));
-				});
-			}),
-		);
-
 		this.addSettingTab(new MiraiBotSettingTab(this));
 		if (this.settings.autoLaunch) this.botManager.launch();
 
 		this.registerObsidianProtocolHandler('mirai-bot', async (e) => {
 			await protocolHandler(e as unknown as Parameters, this.settings);
 		});
-		registerEvents(this);
-		registerTimers(this);
-		this.activateBotPanel();
 	}
 
 	async onunload() {
@@ -93,12 +76,24 @@ export default class MiraiBot extends Plugin {
 		});
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_TYPE_BOT)[0]);
 	}
-	async activateBotPanel() {
+	async activateSenderPanel() {
 		if (this.app.workspace.getLeavesOfType(VIEW_TYPE_BOT_PANEL).length === 0) {
 			await this.app.workspace.getRightLeaf(false).setViewState({
 				type: VIEW_TYPE_BOT_PANEL,
 			});
 		}
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_TYPE_BOT_PANEL)[0]);
+	}
+	addEditorMenuItem() {
+		this.registerEvent(
+			app.workspace.on('editor-menu', (menu, editor, view) => {
+				let selection = editor.getSelection();
+				const cursorLocation = editor.getCursor();
+				if (!selection || selection === '') selection = editor.getLine(cursorLocation.line);
+				menu.addItem((item) => {
+					item.setTitle('通过Bot发送').onClick(async () => await sendToMe(selection, this.botManager));
+				});
+			}),
+		);
 	}
 }

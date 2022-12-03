@@ -42,11 +42,11 @@ export const createNoteFromRecord = async (
 	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
 
 	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
+	const headMatch = content.replace(/\n/, ' ').match(/^[^![\]()]{15}/gm);
 	if (cover && cover != '') record += `\n\t![${cover}|300](${cover})`;
 	if (media && media != '') record += `\n\t![audio](${media})`;
 	if (desc && desc != '') record += `\n\t${desc}`;
-	if (content && content != '') record += `\n\t${content.slice(0, 10) + '...'}`;
-	if (link && link != '') record += `\n\tFrom ${link}`;
+	if (link && link != '') record += `\n\tFrom [${headMatch ? headMatch[0] + '...' : newFileName}](${link})`;
 	await app.vault.append(file as TFile, record);
 
 	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';

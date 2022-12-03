@@ -108,7 +108,8 @@
 		color: #000;
 		user-select: text;
 		text-align: start;
-		word-break: break-all;
+		word-break: normal;
+		overflow: hidden;
 		margin: auto;
 		margin-bottom: 10px;
 		margin-top: 10px;

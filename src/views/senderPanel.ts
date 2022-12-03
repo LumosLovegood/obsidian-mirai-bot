@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type MiraiBot from 'src/main';
-import { sendToMe } from '../services/messageServices';
+import { sendToMe } from '../services/sentToMe';
 import type Component from './components/BotActivityView.svelte';
 export const VIEW_TYPE_BOT_PANEL = 'bot-panel';
 
@@ -29,15 +29,15 @@ export class BotPanel extends ItemView {
 		if (contentEl.getText() === '') contentEl.setText('可以把要传输的内容拖过来~');
 		contentEl.addEventListener('drop', function (event) {
 			const message = event.dataTransfer?.getData('text/plain') ?? '';
-			contentEl.setText(message);
 			const htmlStr = event.dataTransfer?.getData('text/html') ?? '';
 			const html = new DOMParser().parseFromString(htmlStr, 'text/html').body;
 			const src = html.querySelector('img')?.src;
-			console.log(html.firstChild);
 			if (src) {
+				contentEl.setText('');
 				contentEl.createEl('img', { attr: { src: src } });
 				sendToMe(`![ss](${src})`, plugin.botManager);
 			} else {
+				contentEl.setText(message);
 				sendToMe(message, plugin.botManager);
 			}
 			event.preventDefault();

@@ -2,10 +2,14 @@ import { Bot, Message } from 'mirai-js';
 import { Notice } from 'obsidian';
 import type MiraiBot from './main';
 import { generalController } from './controllers/messageController';
+import { TimerController } from './controllers/timerController';
+import { EventController } from './controllers/eventController';
 
 export class BotManager {
 	readonly bot = new Bot();
 	creating: boolean;
+	timerController: TimerController;
+	eventController: EventController;
 	private botOn = false;
 	private item;
 
@@ -44,17 +48,11 @@ export class BotManager {
 	}
 
 	initEvents() {
+		this.plugin.activateSenderPanel();
+		this.plugin.addEditorMenuItem();
+		this.eventController = new EventController(this.plugin);
+		this.timerController = new TimerController(this.plugin, this.bot);
 		this.bot.on('FriendMessage', generalController(this.bot, this.plugin));
-		this.bot.on('error', async (err) => {
-			console.error(err);
-			new Notice('The bot is diaconnected.');
-			await this.stop();
-		});
-		this.bot.on('unexpected-response', async (err) => {
-			console.error(err);
-			new Notice('The bot is diaconnected.');
-			await this.stop();
-		});
 	}
 
 	sendMessage(message: Message) {

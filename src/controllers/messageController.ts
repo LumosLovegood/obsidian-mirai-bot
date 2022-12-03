@@ -1,22 +1,19 @@
 import { Bot, Middleware } from 'mirai-js';
 import { getDailyNoteFile } from 'src/utils';
 import type { TFile } from 'obsidian';
-import type MiraiBot from '../main';
-import { wodService } from '../services/messageServices';
+import { noteFromBot, tempTextService } from 'src/services/textMessage';
+import { bookService } from 'src/services/textMessage';
 import {
 	atomReadService,
 	bilibiliService,
-	bookService,
 	gushiwenService,
-	locationService,
 	musicService,
-	noteService,
-	picService,
-	textService,
-	voiceService,
 	wxoaService,
 	zhihuService,
-} from '../services/messageServices';
+} from 'src/services/appShareMessage';
+import type MiraiBot from '../main';
+import { wodService } from '../services/subscriptions';
+import { locationService, picService, voiceService } from '../services/mediaMessage';
 
 export function generalController(bot: Bot, plugin: MiraiBot) {
 	return new Middleware()
@@ -109,7 +106,11 @@ const textController = async function (data: any, bot: Bot, plugin: MiraiBot, fi
 		return;
 	}
 	if (['记录', '在吗'].includes(data.text)) {
-		await noteService(data, bot, plugin, file);
+		await noteFromBot(data, bot, plugin, file);
+		return;
+	}
+	if (['待办'].includes(data.text)) {
+		await noteFromBot(data, bot, plugin, file, 'todo');
 		return;
 	}
 	if ('听力' === data.text) {
@@ -117,7 +118,7 @@ const textController = async function (data: any, bot: Bot, plugin: MiraiBot, fi
 		return;
 	}
 	if (!data.text.startsWith('想法 ')) {
-		await textService(data.text, bot, plugin, file);
+		await tempTextService(data.text, bot, plugin, file);
 	}
 };
 
