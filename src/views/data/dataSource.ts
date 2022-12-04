@@ -108,7 +108,7 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 						r,
 					)}" style="word-break:break-all">${r}</a>`;
 				})
-				.replace(/- \[(.)\] (.*)/, function (...args) {
+				.replace(/^。(.+)/, function (...args) {
 					console.log(args[1]);
 					return `<input type="checkbox" ${args[1] === 'x' ? 'checked' : ''} disabled> ${args[2]}`;
 				});

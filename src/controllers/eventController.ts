@@ -1,4 +1,4 @@
-import { addVaultEventRecord } from 'src/services/addRecordEvent';
+import { addVaultEventRecord } from 'src/services/eventService';
 import type MiraiBot from '../main';
 
 export class EventController {

@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import type { Readable } from 'stream';
-import { request } from 'obsidian';
+import { Notice, request } from 'obsidian';
 import got from 'got';
 import { fromBuffer } from 'file-type';
 import { createDailyNote, getAllDailyNotes, getDailyNote } from 'obsidian-daily-notes-interface';
@@ -122,7 +122,10 @@ export async function createBotFolder() {
 	if (!(await app.vault.adapter.exists(botTempFolder))) await app.vault.createFolder(botTempFolder);
 }
 
-export async function saveRecord(rec: Pick<ActivityRecord, 'brief' | 'briefLink' | 'category' | 'details'>) {
+export async function saveRecord(
+	rec: Pick<ActivityRecord, 'brief' | 'briefLink' | 'category' | 'details'>,
+	merge?: boolean,
+) {
 	const now = window.moment();
 	const botFolder = app.vault.configDir + '/mirai-bot/';
 	const dataPath = botFolder + `data/${now.format('YYYY-MM-DD')}.json`;
@@ -133,18 +136,25 @@ export async function saveRecord(rec: Pick<ActivityRecord, 'brief' | 'briefLink'
 	const lastRecord = activities[activities.length - 1];
 	const lastMtime = lastRecord.mtime ?? lastRecord.time;
 	const diff = now.diff(window.moment(lastMtime, 'HH:mm'), 'minutes');
-	if (diff < 5) {
-		activities[activities.length - 1].details = [...lastRecord.details, ...rec.details];
+	if (merge && diff < 3) {
+		const details = [...lastRecord.details, ...rec.details];
+		details.forEach((value, index, array) => {
+			if (index > 0 && value.type === 'text' && array[index - 1].type === 'text') {
+				value.content = array[index - 1].content + '<br/>' + value.content;
+				array[index - 1].content = '';
+			}
+		});
+		activities[activities.length - 1].details = details.filter((d) => d.content != '');
 		activities[activities.length - 1].mtime = now.format('HH:mm');
 	} else activities.push({ ...rec, time: now.format('HH:mm'), mtime: now.format('HH:mm') });
 	await app.vault.adapter.write(dataPath, JSON.stringify(activities));
 }
 
 export async function sendText(text: string, quote?: number) {
-	//@ts-ignore
-	await window.miraiBot.sendMessage({
-		//@ts-ignore
-		friend: window.senderID,
+	const friend = app.plugins.plugins['obsidian-mirai-bot'].settings.myQQ;
+	const bot = app.plugins.plugins['obsidian-mirai-bot'].botManager.bot;
+	await bot.sendMessage({
+		friend: friend,
 		message: new Message().addText(text),
 		quote,
 	});
@@ -152,31 +162,39 @@ export async function sendText(text: string, quote?: number) {
 
 export async function sendImage(url: string, quote?: number) {
 	const message = new Message().addImageUrl(url);
-	//@ts-ignore
-	await window.miraiBot.sendMessage({
-		//@ts-ignore
-		friend: window.senderID,
+	const friend = app.plugins.plugins['obsidian-mirai-bot'].settings.myQQ;
+	const bot = app.plugins.plugins['obsidian-mirai-bot'].botManager.bot;
+	await bot.sendMessage({
+		friend: friend,
 		quote,
 		message: message,
 	});
 }
 
 export async function sendVoice(path: string, quote?: number) {
-	//@ts-ignore
-	await window.miraiBot.sendMessage({
-		//@ts-ignore
-		friend: window.senderID,
+	const friend = app.plugins.plugins['obsidian-mirai-bot'].settings.myQQ;
+	const bot = app.plugins.plugins['obsidian-mirai-bot'].botManager.bot;
+	await bot.sendMessage({
+		friend: friend,
 		quote,
-		message: path,
+		message: new Message().addVoicePath(path),
 	});
 }
 
 export async function sendMessage(message: any, quote?: number) {
-	//@ts-ignore
-	await window.miraiBot.sendMessage({
-		//@ts-ignore
-		friend: window.senderID,
+	const friend = app.plugins.plugins['obsidian-mirai-bot'].settings.myQQ;
+	const bot = app.plugins.plugins['obsidian-mirai-bot'].botManager.bot;
+	await bot.sendMessage({
+		friend: friend,
 		message: message,
 		quote,
 	});
+}
+
+export function feedback(message: string, to: 'bot' | 'obsidian') {
+	if (to === 'bot') {
+		return sendText(message);
+	}
+	new Notice(message);
+	console.log(message);
 }

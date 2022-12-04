@@ -10,10 +10,11 @@ import type { MiraiBotSettings, Parameters } from './type';
 import { protocolHandler } from './controllers/protocolController';
 import { BotPanel, VIEW_TYPE_BOT_PANEL } from './views/senderPanel';
 import { sendToMe } from './services/sentToMe';
+import { plainController } from './controllers/messageController';
 
 export default class MiraiBot extends Plugin {
 	settings: MiraiBotSettings;
-	public botManager: BotManager = new BotManager(this);
+	botManager: BotManager = new BotManager(this);
 
 	async onload() {
 		logging.registerConsoleLogger();
@@ -27,6 +28,7 @@ export default class MiraiBot extends Plugin {
 		this.registerView(VIEW_TYPE_BOT_PANEL, (leaf) => new BotPanel(leaf, this));
 
 		this.addRibbonIcon('bot', 'Bot Timeline', () => this.activateBotView());
+		this.addRibbonIcon('dice', '测试', () => plainController('@摘录 朝花夕拾'));
 
 		this.addCommand({
 			id: 'open-bot',

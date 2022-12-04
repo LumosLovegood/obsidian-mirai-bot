@@ -1,8 +1,8 @@
 import type { RecordDetail } from 'src/type';
 import { imgHandler, saveRecord, saveVoice, sendText } from 'src/utils';
-import type MiraiBot from '../main';
 
-export const picService = async (plugin: MiraiBot, isRercord: boolean, messageChain: any) => {
+export const picService = async (isRercord: boolean, messageChain: any) => {
+	const plugin = app.plugins.plugins['obsidian-mirai-bot'];
 	const message = messageChain[1];
 	const messageId = messageChain[0].id;
 	const imageUrl = await imgHandler(message.url, plugin.settings);
@@ -36,7 +36,8 @@ export const locationService = async (appInfo: any) => {
 	await sendText(`位置已记录， ${lat},${lng})`);
 };
 
-export const voiceService = async (plugin: MiraiBot, url: string) => {
+export const voiceService = async (url: string) => {
+	const plugin = app.plugins.plugins['obsidian-mirai-bot'];
 	const voicePath = await saveVoice(url, plugin.settings);
 	const category = '💬记录语音';
 	const brief = '';

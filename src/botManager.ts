@@ -1,7 +1,7 @@
 import { Bot, Message } from 'mirai-js';
 import { Notice } from 'obsidian';
 import type MiraiBot from './main';
-import { generalController } from './controllers/messageController';
+import { messageController } from './controllers/messageController';
 import { TimerController } from './controllers/timerController';
 import { EventController } from './controllers/eventController';
 
@@ -13,7 +13,7 @@ export class BotManager {
 	private botOn = false;
 	private item;
 
-	constructor(private readonly plugin: MiraiBot) {
+	constructor(readonly plugin: MiraiBot) {
 		this.item = plugin.addStatusBarItem();
 		this.item.setText('😴BOT OFF');
 	}
@@ -51,12 +51,8 @@ export class BotManager {
 		this.plugin.activateSenderPanel();
 		this.plugin.addEditorMenuItem();
 		this.eventController = new EventController(this.plugin);
-		this.timerController = new TimerController(this.plugin, this.bot);
-		this.bot.on('FriendMessage', generalController(this.bot, this.plugin));
-		//@ts-ignore
-		window.miraiBot = this.bot;
-		//@ts-ignore
-		window.senderID = this.plugin.settings.myQQ;
+		this.timerController = new TimerController(this.plugin);
+		this.bot.on('FriendMessage', messageController(this));
 	}
 
 	sendMessage(message: Message) {

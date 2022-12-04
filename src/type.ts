@@ -1,4 +1,6 @@
+import type { MessageType } from 'mirai-js/dist/node/BaseType';
 import type { LogOptions } from './libs/logging';
+import type { BotManager } from './botManager';
 
 declare module 'obsidian' {
 	interface App {
@@ -46,6 +48,11 @@ declare module 'obsidian' {
 						};
 					};
 					manifest: PluginManifest;
+				};
+				'obsidian-mirai-bot': {
+					settings: MiraiBotSettings;
+					manifest: PluginManifest;
+					botManager: BotManager;
 				};
 			};
 			enablePluginAndSave(plugin: string): void;
@@ -118,4 +125,20 @@ export interface ActivityRecord {
 export interface RecordDetail {
 	type: 'image' | 'text' | 'iframe' | 'audio' | 'internalLink' | 'externalLink' | 'link';
 	content: string;
+}
+
+export interface WaitFor {
+	groupMember: (qq: number) => {
+		messageChain: () => Promise<MessageType[]>;
+		text: () => Promise<string>;
+		custom: <R>(processor: () => R) => Promise<R>;
+	};
+	friend: (qq: number) => {
+		messageChain: () => Promise<MessageType[]>;
+		text: () => Promise<string>;
+		custom: <R>(processor: () => R) => Promise<R>;
+	};
+	messageChain: () => Promise<MessageType[]>;
+	text: Promise<string>;
+	custom: <R>(processor: () => R) => Promise<R>;
 }

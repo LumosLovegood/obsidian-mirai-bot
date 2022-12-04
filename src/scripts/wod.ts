@@ -27,8 +27,6 @@ export async function getWod({ imageFolder }: MiraiBotSettings) {
 	// @ts-ignore
 	const link = $('meta[property="og:url"]')?.content;
 	// @ts-ignore
-	const description = $('meta[property="og:description"]')?.content;
-	// @ts-ignore
 	const episode = $('#art19-podcast-player')?.attributes['data-episode-id']?.value;
 	const mediaUrl = `https://rss.art19.com/episodes/${episode}.mp3`;
 	const title = $('h1')?.textContent ?? '';
@@ -54,7 +52,6 @@ export async function getWod({ imageFolder }: MiraiBotSettings) {
 		didYouKnow,
 		link,
 		cover,
-		description,
 		title,
 		voicePath,
 		media: getRealFilePath(imageFolder + '/' + title + '.mp3'),

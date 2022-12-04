@@ -56,8 +56,9 @@
 			</TimelineSeparator>
 			<TimelineContent>
 				<div class="brief">
-					{activity.category}: 					<!-- svelte-ignore a11y-mouse-events-have-key-events -->
-					<a on:mouseover={popover} href={activity.briefLink} style="text-decoration-line: none;color:#8bc24c;">
+					{activity.category}:
+					<!-- svelte-ignore a11y-mouse-events-have-key-events -->
+					<a on:mouseover={popover} href={activity.briefLink != '' ? activity.briefLink : 'javascript:return false'} style="text-decoration-line: none;color:#8bc24c;" >
 						{activity.brief}
 					</a>
 				</div>
@@ -68,11 +69,11 @@
 						<img on:click={preview} src={content} alt={content} class="img-cover" />
 					</div>
 				{:else if type === 'audio'}
-					<div class="iframe-music">
+					<div class="info-audio">
 						<audio controls src={content} class="height:100%"></audio>
 					</div>
 				{:else if type === 'iframe'}
-					<br /><iframe src={content} title="Music Share" height="100" class="iframe-music" />
+					<br /><iframe src={content} title="Music Share" height="100" width="100%" class="iframe-music" />
 				{:else}
 					<div class="info-block">
 						{@html content}
@@ -96,6 +97,7 @@
 		margin: auto;
 		margin-bottom: 10px;
 		margin-top: 10px;
+		width: 70%;
 		border-radius: 15px;
 		box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.46), 0 2px 12px 0 rgba(0, 0, 0, 0.12),
 			0 4px 5px -3px rgba(0, 0, 0, 0.2);
@@ -144,5 +146,15 @@
 		background-color: #41b6e6;
 		padding: 3px;
 		border-radius: 10px;
+	}
+	.info-audio {
+		width: 70%;
+		min-width: 100px;
+		margin: auto;
+		margin-bottom: 10px;
+		margin-top: 10px;
+		border-radius: 15px;
+		box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.46), 0 2px 12px 0 rgba(0, 0, 0, 0.12),
+			0 4px 5px -3px rgba(0, 0, 0, 0.2);
 	}
 </style>
