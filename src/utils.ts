@@ -1,13 +1,11 @@
 import { exec } from 'child_process';
 import type { Readable } from 'stream';
-import { TFile, request } from 'obsidian';
+import { request } from 'obsidian';
 import got from 'got';
 import { fromBuffer } from 'file-type';
 import { createDailyNote, getAllDailyNotes, getDailyNote } from 'obsidian-daily-notes-interface';
-import type { MiraiBotSettings } from './type';
-import type MiraiBot from './main';
-
-const VARIABLE_REGEX = new RegExp(/{{VALUE:([^\n\r}]*)}}/);
+import { Message } from 'mirai-js';
+import type { ActivityRecord, MiraiBotSettings } from './type';
 
 export const getDailyNoteFile = async function (date: moment.Moment = window.moment()) {
 	const dailyNotes = getAllDailyNotes();
@@ -28,44 +26,6 @@ export const getParsedHtml = async (url: string, headers: any) => {
 		return;
 	}
 	return new DOMParser().parseFromString(res, 'text/html');
-};
-
-export const createNoteFromRecord = async (
-	data: any,
-	source: string,
-	plugin: MiraiBot,
-	file: TFile,
-	templatePath?: string,
-) => {
-	plugin.botManager.creating = true;
-	const { title, link, cover, media, desc, content } = data;
-	const newFileName = title.replace(/[\\/:*?"<>|]/g, '_');
-
-	let record = `\n- ${window.moment().format('HH:mm')} ${source}: [[${newFileName}]]`;
-	const headMatch = content.replace(/\n/, ' ').match(/^[^![\]()]{15}/gm);
-	if (cover && cover != '') record += `\n\t![${cover}|300](${cover})`;
-	if (media && media != '') record += `\n\t![audio](${media})`;
-	if (desc && desc != '') record += `\n\t${desc}`;
-	if (link && link != '') record += `\n\tFrom [${headMatch ? headMatch[0] + '...' : newFileName}](${link})`;
-	await app.vault.append(file as TFile, record);
-
-	const newFilePath = plugin.settings.tempFolder + '/' + newFileName + '.md';
-	let newFile = app.vault.getAbstractFileByPath(newFilePath);
-	if (newFile) return newFile;
-
-	templatePath = templatePath ? templatePath + '.md' : plugin.settings.templates['templateNotePath'] + '.md';
-	const templateFile = app.vault.getAbstractFileByPath(templatePath);
-	let template = await app.vault.read(templateFile as TFile);
-	// eslint-disable-next-line no-loops/no-loops
-	while (RegExp(VARIABLE_REGEX).test(template)) {
-		const valueMatch = template.match(VARIABLE_REGEX);
-		template = template.replace(VARIABLE_REGEX, () => {
-			return valueMatch ? data[valueMatch[1]] : '';
-		});
-	}
-	newFile = await app.vault.create(newFilePath, template);
-	plugin.botManager.creating = false;
-	return newFile;
 };
 
 export const getRealFilePath = (path: string) => {
@@ -133,7 +93,7 @@ export async function saveImage(imageUrl: string, { imageFolder }: MiraiBotSetti
 	if (!(await app.vault.adapter.exists(filePath))) {
 		await app.vault.createBinary(filePath, fileData);
 	}
-	return filePath;
+	return getRealFilePath(filePath);
 }
 
 export async function saveVoice(url: string, { imageFolder }: MiraiBotSettings) {
@@ -152,7 +112,7 @@ export async function saveVoice(url: string, { imageFolder }: MiraiBotSettings) 
 	const pyPath = botFolder + '/slk2mp3.py';
 	const cmdStr = `pwsh.exe -c python ${pyPath} ${slkPath} ${pcmPath} ${mp3Path} '${url.replace(/&/g, '^&')}'`;
 	exec(cmdStr);
-	return imageFolder + '/' + fileName + '.mp3';
+	return getRealFilePath(imageFolder + '/' + fileName + '.mp3');
 }
 
 export async function createBotFolder() {
@@ -160,4 +120,63 @@ export async function createBotFolder() {
 	const botTempFolder = botFolder + '/temp';
 	if (!(await app.vault.adapter.exists(botFolder))) await app.vault.createFolder(botFolder);
 	if (!(await app.vault.adapter.exists(botTempFolder))) await app.vault.createFolder(botTempFolder);
+}
+
+export async function saveRecord(rec: Pick<ActivityRecord, 'brief' | 'briefLink' | 'category' | 'details'>) {
+	const now = window.moment();
+	const botFolder = app.vault.configDir + '/mirai-bot/';
+	const dataPath = botFolder + `data/${now.format('YYYY-MM-DD')}.json`;
+	let activities: ActivityRecord[] = [];
+	if (await app.vault.adapter.exists(dataPath)) {
+		activities = JSON.parse(await app.vault.adapter.read(dataPath));
+	}
+	const lastRecord = activities[activities.length - 1];
+	const lastMtime = lastRecord.mtime ?? lastRecord.time;
+	const diff = now.diff(window.moment(lastMtime, 'HH:mm'), 'minutes');
+	if (diff < 5) {
+		activities[activities.length - 1].details = [...lastRecord.details, ...rec.details];
+		activities[activities.length - 1].mtime = now.format('HH:mm');
+	} else activities.push({ ...rec, time: now.format('HH:mm'), mtime: now.format('HH:mm') });
+	await app.vault.adapter.write(dataPath, JSON.stringify(activities));
+}
+
+export async function sendText(text: string, quote?: number) {
+	//@ts-ignore
+	await window.miraiBot.sendMessage({
+		//@ts-ignore
+		friend: window.senderID,
+		message: new Message().addText(text),
+		quote,
+	});
+}
+
+export async function sendImage(url: string, quote?: number) {
+	const message = new Message().addImageUrl(url);
+	//@ts-ignore
+	await window.miraiBot.sendMessage({
+		//@ts-ignore
+		friend: window.senderID,
+		quote,
+		message: message,
+	});
+}
+
+export async function sendVoice(path: string, quote?: number) {
+	//@ts-ignore
+	await window.miraiBot.sendMessage({
+		//@ts-ignore
+		friend: window.senderID,
+		quote,
+		message: path,
+	});
+}
+
+export async function sendMessage(message: any, quote?: number) {
+	//@ts-ignore
+	await window.miraiBot.sendMessage({
+		//@ts-ignore
+		friend: window.senderID,
+		message: message,
+		quote,
+	});
 }

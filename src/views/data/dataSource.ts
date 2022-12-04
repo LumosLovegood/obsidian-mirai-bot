@@ -3,7 +3,7 @@ import { getAllDailyNotes } from 'obsidian-daily-notes-interface';
 import type { ActivityRecord, MiraiBotSettings, RecordDetail } from 'src/type';
 import { getDailyNoteFile, getRealFilePath } from 'src/utils';
 
-export async function getActivities(settings: MiraiBotSettings, date?: moment.Moment) {
+export async function parseActivities(settings: MiraiBotSettings, date: moment.Moment) {
 	const vaultName = encodeURI(app.vault.getName());
 	const file = await getDailyNoteFile(date);
 	const records = (await app.vault.read(file as TFile)).replace(
@@ -68,7 +68,9 @@ export async function getActivities(settings: MiraiBotSettings, date?: moment.Mo
 		console.log('🚀 ~ details', details);
 		return { time, category, brief, details, briefLink };
 	});
-	return activities;
+	const botFolder = app.vault.configDir + '/mirai-bot/';
+	const dataPath = botFolder + `data/${date.format('YYYY-MM-DD')}.json`;
+	await app.vault.adapter.write(dataPath, JSON.stringify(activities));
 }
 
 export function getHeatmapData() {
@@ -79,4 +81,39 @@ export function getHeatmapData() {
 		return { date, value };
 	});
 	return data;
+}
+
+export async function getActivities(settings: MiraiBotSettings, date?: moment.Moment) {
+	if (!date) date = window.moment();
+	const botFolder = app.vault.configDir + '/mirai-bot/';
+	const dataPath = botFolder + `data/${date.format('YYYY-MM-DD')}.json`;
+	if (!(await app.vault.adapter.exists(dataPath))) {
+		await parseActivities(settings, date);
+		console.log('pasing...');
+	}
+	const activities: ActivityRecord[] = JSON.parse(await app.vault.adapter.read(dataPath));
+	return activities.map((item) => {
+		item.details = item.details.map((d) => {
+			if (d.type != 'text') return d;
+			d.content = d.content
+				.replace(/(?<!!)\[(.*)\]\((.*)\)/g, function (...args) {
+					const title = args[1];
+					const url = args[2];
+					return `<a href="obsidian://web-open?url=${encodeURIComponent(
+						url,
+					)}" style="text-decoration-line: none;">${title}</a>`;
+				})
+				.replace(/https?:.*?(?=\s|$)/g, (r) => {
+					return `<a href="obsidian://web-open?url=${encodeURIComponent(
+						r,
+					)}" style="word-break:break-all">${r}</a>`;
+				})
+				.replace(/- \[(.)\] (.*)/, function (...args) {
+					console.log(args[1]);
+					return `<input type="checkbox" ${args[1] === 'x' ? 'checked' : ''} disabled> ${args[2]}`;
+				});
+			return d;
+		});
+		return item;
+	});
 }

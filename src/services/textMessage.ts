@@ -1,49 +1,43 @@
-import { type Bot, Message } from 'mirai-js';
 import type { TFile } from 'obsidian';
 import type MiraiBot from 'src/main';
 import { getBookInfo, searchDouban } from 'src/scripts/doubanBook';
-import { createNoteFromRecord } from 'src/utils';
-import { picService } from './mediaMessage';
+import type { ActivityRecord, RecordDetail } from 'src/type';
+import { saveRecord, sendText } from 'src/utils';
+import { createNoteFromRecord } from './appShareMessage';
 
-export const noteFromBot = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile, mode?: 'todo' | 'normal') => {
-	const { waitFor } = data;
-	const vault = app.vault;
-	await bot.sendMessage({ friend: plugin.settings.myQQ, message: new Message().addText('有在认真听~') });
-	let nowTitle = '\n- ' + window.moment().format('HH:mm');
-	let todoSign = '';
-	if (mode == 'todo') {
-		nowTitle += ' 🔍待办: ';
-		todoSign = '- [ ] ';
-	} else {
-		nowTitle += ' ✏️随笔: ';
-	}
-	const message = new Message().addText('记录完成~');
-	let next = await waitFor.messageChain();
-	let note = next[1];
-	let isFirst = true;
-	// eslint-disable-next-line no-loops/no-loops
-	while (note.type != 'Plain' || !['结束'].includes(note.text)) {
-		if (isFirst) {
-			message.addText('\n---------\n');
-			vault.append(file as TFile, nowTitle);
-			isFirst = false;
-		}
-		if (note.type === 'Plain') {
-			const plain = '\n\t' + todoSign + note.text.replace(/\n/g, '\n\t');
-			message.addText(note.text + '\n');
-			vault.append(file as TFile, plain);
-		} else if (note.type === 'Image' && mode != 'todo') {
-			await picService(data, bot, plugin, file, false, next);
-			message.addImageUrl(note.url ?? '');
-		}
-		next = await waitFor.messageChain();
-		note = next[1];
-	}
-	await bot.sendMessage({ friend: plugin.settings.myQQ, message: message });
-};
+// export const noteFromBot = async (plugin: MiraiBot, waitFor: any, mode?: 'todo' | 'normal') => {
+// 	await sendText('有在认真听~');
+// 	let category = '✏️随笔';
+// 	let todoSign = '';
+// 	if (mode == 'todo') {
+// 		category = '🔍待办';
+// 		todoSign = '- [ ] ';
+// 	}
+// const message = new Message().addText('记录完成~');
+// let next = await waitFor.messageChain();
+// let note = next[1];
+// let isFirst = true;
+// // eslint-disable-next-line no-loops/no-loops
+// while (note.type != 'Plain' || !['结束'].includes(note.text)) {
+// 	if (isFirst) {
+// 		message.addText('\n---------');
+// 		isFirst = false;
+// 	}
+// 	if (note.type === 'Plain') {
+// 		record.details.push({ type: 'text', content: todoSign + note.text });
+// 		message.addText('\n' + note.text);
+// 	} else if (note.type === 'Image' && mode != 'todo') {
+// 		record.details.push(await picService(plugin, false, next));
+// 		message.addImageUrl(note.url ?? '');
+// 	}
+// 	next = await waitFor.messageChain();
+// 	note = next[1];
+// }
+// await saveRecord(record);
+// await sendMessage(message);
+// };
 
-export const bookService = async (data: any, bot: Bot, plugin: MiraiBot, file: TFile) => {
-	const book = data.text.replace('摘录 ', '');
+export const bookService = async (book: string, waitFor: any, plugin: MiraiBot) => {
 	const bookFileName = book?.replace(/[\\/:*?"<>|\n]/g, '_');
 	const bookFilePath = plugin.settings.tempFolder + '/' + bookFileName + '.md';
 	let bookFile = app.vault.getAbstractFileByPath(bookFilePath);
@@ -52,24 +46,17 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot, file: T
 		if (bookList.length == 0) bookFile = await app.vault.create(bookFilePath, '');
 		else {
 			const items = bookList.map((e) => e.text).join('\n');
-			const message = new Message().addText('还没有创建过这本书哦，从下面选择一个创建吧~\n').addText(items);
-			await bot.sendMessage({
-				friend: plugin.settings.myQQ,
-				message: message,
-			});
-			const index = parseInt(await data.waitFor.friend(plugin.settings.myQQ).text());
+			await sendText('还没有创建过这本书哦，从下面选择一个创建吧~\n' + items);
+			const index = parseInt(await waitFor.friend(plugin.settings.myQQ).text());
 			if (index && index >= 1 && index <= bookList.length) {
 				const infoData = await getBookInfo(bookList[index - 1].url);
 				bookFile = await createNoteFromRecord(
 					infoData,
 					'📖读书',
 					plugin,
-					file,
 					plugin.settings.templates['templateBookPath'],
 				);
-			} else {
-				return;
-			}
+			} else return;
 		}
 	} else {
 		const { getPropertiesInFile } = app.plugins.plugins['metaedit'].api;
@@ -77,56 +64,35 @@ export const bookService = async (data: any, bot: Bot, plugin: MiraiBot, file: T
 			(p: { key: string }) => p.key == 'banner',
 		);
 		const banner = properties['content'];
-		const record = `\n- ${window.moment().format('HH:mm')} 📖读书: [[${bookFileName}]]\n![|300](${banner})`;
-		await app.vault.append(file as TFile, record);
+		const record: ActivityRecord = {
+			time: '',
+			category: '',
+			brief: '',
+			briefLink: '',
+			details: [],
+		};
+		record.time = window.moment().format('HH:mm');
+		record.category = '📖读书';
+		record.brief = bookFileName;
+		record.briefLink = `obsidian://advanced-uri?vault=${app.vault.getName()}&filename=${encodeURI(
+			record.brief,
+		)}&openmode=true`;
+		record.details.push({ type: 'image', content: banner });
+		await saveRecord(record);
 	}
-	await bot.sendMessage({
-		friend: plugin.settings.myQQ,
-		message: new Message().addText('准备好做摘录了！'),
-	});
-	const quote: string = await data.waitFor.friend(plugin.settings.myQQ).text();
-	if (quote != '取消') {
-		app.vault.append(bookFile as TFile, '\n\n> ' + quote).then(() => {
-			bot.sendMessage({
-				friend: plugin.settings.myQQ,
-				message: new Message().addText('✏️摘录已完成~'),
-			});
-		});
-		await ideaService(data, bot, plugin, bookFile as TFile).then((idea) => {
-			if (idea) app.vault.append(file as TFile, '\n' + idea);
-		});
-	}
-};
-
-export const ideaService = async (
-	data: any,
-	bot: Bot,
-	plugin: MiraiBot,
-	file: TFile,
-	{ idea, newFile }: { idea?: string; newFile?: TFile } = {},
-) => {
-	if (!idea) idea = await data.waitFor.friend(plugin.settings.myQQ).text();
-
-	if (idea?.startsWith('想法')) {
-		app.vault.append(file as TFile, '\n\t' + idea.replace(/\n/gm, '\n\t')).then(() => {
-			bot.sendMessage({
-				friend: plugin.settings.myQQ,
-				message: new Message().addText('💡想法已记录~'),
-			});
-		});
-		if (newFile) {
-			const { update } = app.plugins.plugins['metaedit'].api;
-			await update('highlight', idea.replace('想法 ', ''), newFile);
-		}
-		return idea.replace('想法 ', '');
+	await sendText('准备好做摘录了！');
+	const quote: string = await waitFor.friend(plugin.settings.myQQ).text();
+	if (quote != '结束') {
+		app.vault.append(bookFile as TFile, '\n\n> ' + quote);
+		await sendText('✏️摘录已完成~');
 	}
 };
 
-export const tempTextService = async (text: string, bot: Bot, plugin: MiraiBot, file: TFile, title = '📒记录文本') => {
-	app.vault.append(file as TFile, `\n- ${window.moment().format('HH:mm')} ${title}: \n\t` + text?.trim()).then(() => {
-		bot.sendMessage({
-			friend: plugin.settings.myQQ,
-			message: new Message().addText('文本已记录~'),
-		});
-	});
+export const textService = async (text: string) => {
+	const category = '🔍小记';
+	const details: RecordDetail[] = [{ type: 'text', content: text }];
+	const brief = '';
+	const briefLink = '';
+	await saveRecord({ category, brief, briefLink, details });
+	await sendText('已记录~');
 };

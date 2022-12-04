@@ -53,6 +53,10 @@ export class BotManager {
 		this.eventController = new EventController(this.plugin);
 		this.timerController = new TimerController(this.plugin, this.bot);
 		this.bot.on('FriendMessage', generalController(this.bot, this.plugin));
+		//@ts-ignore
+		window.miraiBot = this.bot;
+		//@ts-ignore
+		window.senderID = this.plugin.settings.myQQ;
 	}
 
 	sendMessage(message: Message) {

@@ -30,7 +30,7 @@ export async function getBiliInfo(url: string) {
 	const author = $("meta[name='author']")?.content;
 	const title = $("meta[property='og:title']")?.content?.replace(/_哔哩哔哩_bilibili$/g, '');
 	const link = $("meta[property='og:url']")?.content;
-	const content = $('div#v_desc')?.textContent?.trim()?.replace(/收起$/, '');
+	const content = $('div#v_desc')?.textContent?.trim()?.replace(/收起$/, '') ?? '没有简介';
 	const partList = $$('script')[3]?.textContent?.match(/(?<=part":").+?(?=")/g);
 	let parts = '';
 	if ($('h3')) {

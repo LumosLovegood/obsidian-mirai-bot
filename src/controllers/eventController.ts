@@ -8,12 +8,8 @@ export class EventController {
 	init() {
 		this.plugin.registerEvent(
 			app.vault.on('create', (file) => {
-				addVaultEventRecord(this.plugin, file);
-			}),
-		);
-		this.plugin.registerEvent(
-			app.vault.on('rename', (file) => {
-				addVaultEventRecord(this.plugin, file);
+				if (this.plugin.botManager.creating) return;
+				addVaultEventRecord(file);
 			}),
 		);
 	}

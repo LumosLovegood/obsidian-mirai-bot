@@ -1,7 +1,6 @@
-import { Bot, Message } from 'mirai-js';
-import { autoCreateDiary } from 'src/services/createDiaryTimer';
+import type { Bot } from 'mirai-js';
+import { review } from 'src/services/reviewTimer';
 import type MiraiBot from '../main';
-import { getDailyNoteFile } from '../utils';
 import { wodService } from '../services/subscriptions';
 
 export class TimerController {
@@ -10,22 +9,15 @@ export class TimerController {
 	}
 
 	init() {
-		this.addTimer('00:00', async (bot, plugin) => {
-			await autoCreateDiary().then(() =>
-				bot.sendMessage({
-					friend: plugin.settings.myQQ,
-					message: new Message().addText('今天的日记已创建~'),
-				}),
-			);
-		});
-		this.addTimer('08:00', async (bot, plugin) => await wodService(bot, plugin, await getDailyNoteFile()));
+		this.addTimer('08:00', async () => await review());
+		this.addTimer('12:00', async (plugin) => await wodService(plugin));
 	}
 
-	addTimer(time: string, callout: (bot: Bot, plugin: MiraiBot) => any) {
+	addTimer(time: string, callout: (plugin: MiraiBot, bot: Bot) => any) {
 		const interval = (window.moment(time, 'HH:mm') as unknown as number) - (window.moment() as unknown as number);
 		return this.plugin.registerInterval(
 			window.setTimeout(
-				() => callout(this.bot, this.plugin),
+				() => callout(this.plugin, this.bot),
 				interval >= 0 ? interval : interval + 1000 * 3600 * 24,
 			),
 		);

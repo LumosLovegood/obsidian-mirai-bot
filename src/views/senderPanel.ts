@@ -23,7 +23,6 @@ export class BotPanel extends ItemView {
 	}
 
 	async onOpen() {
-		const plugin = this.plugin;
 		const contentEl = this.contentEl;
 		contentEl.contentEditable = 'true';
 		if (contentEl.getText() === '') contentEl.setText('可以把要传输的内容拖过来~');
@@ -35,10 +34,10 @@ export class BotPanel extends ItemView {
 			if (src) {
 				contentEl.setText('');
 				contentEl.createEl('img', { attr: { src: src } });
-				sendToMe(`![ss](${src})`, plugin.botManager);
+				sendToMe(`![ss](${src})`);
 			} else {
 				contentEl.setText(message);
-				sendToMe(message, plugin.botManager);
+				sendToMe(message);
 			}
 			event.preventDefault();
 		});

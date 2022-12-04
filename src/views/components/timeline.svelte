@@ -38,8 +38,12 @@
 			leaf.openFile(tfile as TFile);
 		},500)
 	}
+	function preview(event: any){
+		const targetEl = (<HTMLImageElement>event.target);
+		//@ts-ignore
+		app.plugins.plugins['obsidian-image-toolkit'].containerView.renderContainerView(targetEl);
+	}
 </script>
-
 <Timeline position="alternate">
 	{#each activities as activity}
 		<TimelineItem>
@@ -60,9 +64,8 @@
 				{#each activity.details as {type, content}}
 				{#if type === 'image'}
 					<div class='img-wrapper'>
-						<a href={'obsidian://web-open?url=' + encodeURIComponent(content)}>
-							<img src={content} alt={content} class="img-cover" />
-						</a>
+						<!-- svelte-ignore a11y-click-events-have-key-events -->
+						<img on:click={preview} src={content} alt={content} class="img-cover" />
 					</div>
 				{:else if type === 'audio'}
 					<div class="iframe-music">

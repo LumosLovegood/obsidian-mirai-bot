@@ -112,6 +112,8 @@ export interface ActivityRecord {
 	brief: string;
 	briefLink: string;
 	details: RecordDetail[];
+	mtime?: string;
+	color?: string;
 }
 export interface RecordDetail {
 	type: 'image' | 'text' | 'iframe' | 'audio' | 'internalLink' | 'externalLink' | 'link';

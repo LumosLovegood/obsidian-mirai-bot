@@ -91,7 +91,7 @@ export default class MiraiBot extends Plugin {
 				const cursorLocation = editor.getCursor();
 				if (!selection || selection === '') selection = editor.getLine(cursorLocation.line);
 				menu.addItem((item) => {
-					item.setTitle('通过Bot发送').onClick(async () => await sendToMe(selection, this.botManager));
+					item.setTitle('通过Bot发送').onClick(async () => await sendToMe(selection));
 				});
 			}),
 		);

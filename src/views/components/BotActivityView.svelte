@@ -14,6 +14,7 @@
 	$:dateUrl = `obsidian://advanced-uri?vault=${vaultName}&filename=${encodeURI(date)}&openmode=true`
 	onMount(async() => {
 		activities = await getActivities(settings);
+		// activities = await getActivities(settings);
 		heatmapData = getHeatmapData();
 	})
 	plugin.registerEvent(app.vault.on('modify', async () => {
